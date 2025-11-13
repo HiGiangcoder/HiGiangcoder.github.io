@@ -1,0 +1,101 @@
+/* Responsive styles */
+@media (max-width: 880px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  
+  .photo {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .avatar {
+    width: 90px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+  
+  header {
+    padding: 24px 20px 16px;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .title {
+    order: 2;
+  }
+  
+  .age-info {
+    order: 1;
+    text-align: center;
+  }
+  
+  .content {
+    padding: 16px 20px 24px;
+    gap: 20px;
+  }
+  
+  h1 {
+    font-size: 24px;
+  }
+  
+  .action-buttons, .buttons {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
+
+/* Responsive cho record player */
+@media (max-width: 880px) {
+  .record-player {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .record {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .record-image {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .turntable-arm {
+    right: 30px;
+  }
+  
+  .arm {
+    width: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .record-player {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .record {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .record-image {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .arm {
+    width: 80px;
+  }
+}

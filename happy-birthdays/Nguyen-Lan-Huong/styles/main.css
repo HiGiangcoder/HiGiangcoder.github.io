@@ -1,0 +1,362 @@
+:root {
+  --bg1: #FFDEE9; /* peach */
+  --bg2: #B5FFFC; /* mint */
+  --card: rgba(255,255,255,0.85);
+  --accent: #FF6F91;
+  --text-color: #222;
+  --text-light: #444;
+  --shadow: rgba(10,10,30,0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 980px;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px var(--shadow);
+  overflow: hidden;
+  position: relative;
+}
+
+header {
+  padding: 36px 40px 24px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 18px;
+  flex: 0 0 120px;
+  background: linear-gradient(135deg, #fff, #f8f7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 30px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.title {
+  flex: 1;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.4px;
+}
+
+.lead {
+  margin: 6px 0 0;
+  color: var(--text-light);
+  opacity: 0.9;
+}
+
+.age-info {
+  text-align: right;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 28px;
+  padding: 24px 40px 40px;
+}
+
+.card {
+  background: transparent;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.message-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+}
+
+.message {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
+.signature {
+  margin-top: 12px;
+  font-weight: 700;
+}
+
+.gif-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  align-self: start;
+}
+
+.replace-note {
+  font-size: 13px;
+  color: var(--text-light);
+  opacity: 0.9;
+}
+
+.photo {
+  width: 320px;
+  height: 240px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffe7f0, #fff1ea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #b0466b;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn--pink {
+  background: var(--accent);
+  color: white;
+}
+
+.btn--soft {
+  background: rgba(0,0,0,0.06);
+}
+
+footer {
+  padding: 16px 40px 36px;
+  color: #333;
+  opacity: 0.9;
+  font-size: 13px;
+}
+
+/* balloons */
+.balloon {
+  position: absolute;
+  bottom: -60px;
+  width: 34px;
+  height: 46px;
+  border-radius: 34px 34px 8px 8px;
+  transform-origin: center bottom;
+  animation: float 6s ease-in-out infinite;
+}
+
+.balloon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  width: 2px;
+  height: 18px;
+  background: rgba(0,0,0,0.12);
+  transform: translateX(-50%);
+}
+
+@keyframes float {
+  0% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-220px) rotate(6deg); }
+  100% { transform: translateY(0) rotate(-6deg); }
+}
+
+.b1 {
+  left: 8%;
+  background: radial-gradient(circle at 30% 20%, #fff9, #ff7bac);
+}
+
+.b2 {
+  left: 22%;
+  animation-duration: 7s;
+  background: radial-gradient(circle at 30% 20%, #fff9, #ffd36b);
+}
+
+.b3 {
+  left: 42%;
+  animation-duration: 5.6s;
+  background: radial-gradient(circle at 30% 20%, #fff9, #7ee8fa);
+}
+
+.b4 {
+  left: 70%;
+  animation-duration: 6.5s;
+  background: radial-gradient(circle at 30% 20%, #fff9, #9dffb8);
+}
+
+.b5 {
+  left: 86%;
+  animation-duration: 8s;
+  background: radial-gradient(circle at 30% 20%, #fff9, #cda4ff);
+}
+
+/* confetti canvas full */
+canvas#confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+
+/* Record Player Styles */
+.record-player {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.record {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #2c3e50, #34495e);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease;
+  animation: rotate 20s linear infinite;
+  animation-play-state: paused;
+}
+
+.record.playing {
+  animation-play-state: running;
+}
+
+.record-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #ecf0f1;
+}
+
+.record-center {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ecf0f1;
+  border: 3px solid #bdc3c7;
+  z-index: 2;
+}
+
+.record::before {
+  content: '';
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.record::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Turntable Arm */
+.turntable-arm {
+  position: absolute;
+  top: 0;
+  right: 40px;
+  transform-origin: top right;
+  transform: rotate(-25deg);
+  transition: transform 0.5s ease;
+  z-index: 3;
+}
+
+.record.playing + .turntable-arm {
+  transform: rotate(-10deg);
+}
+
+.arm-base {
+  width: 20px;
+  height: 20px;
+  background: #7f8c8d;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.arm {
+  width: 120px;
+  height: 8px;
+  background: linear-gradient(to bottom, #95a5a6, #bdc3c7);
+  border-radius: 4px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  transform-origin: top right;
+}
+
+.arm-head {
+  width: 15px;
+  height: 15px;
+  background: #e74c3c;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: -5px;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
