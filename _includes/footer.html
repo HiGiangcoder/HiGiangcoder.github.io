@@ -1,0 +1,18 @@
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-about">
+      <p class="footer-brand">{{ site.title }}</p>
+      <p class="footer-note">Viết để hiểu rõ hơn, không phải để có sẵn câu trả lời.</p>
+    </div>
+
+    <div class="footer-links">
+      <a href="https://higiangcoder.github.io/MyDocs/">Tài liệu</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+      <a href="https://github.com/{{ site.author.github }}" rel="me">GitHub</a>
+      <a href="https://www.facebook.com/{{ site.author.facebook }}" rel="me">Facebook</a>
+      <a href="mailto:{{ site.author.email }}">Email</a>
+    </div>
+
+    <p class="footer-copy">© {{ site.time | date: "%Y" }} {{ site.author.name }}</p>
+  </div>
+</footer>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'vi' }}">
+<head>
+  {% include head.html %}
+</head>
+<body>
+  <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+  {% if page.layout == 'post' %}<div class="reading-progress" aria-hidden="true"></div>{% endif %}
+
+  {% include header.html %}
+
+  <main id="main" class="site-main">
+    {{ content }}
+  </main>
+
+  {% include footer.html %}
+
+  <script src="{{ '/assets/js/main.js' | relative_url }}" defer></script>
+</body>
+</html>

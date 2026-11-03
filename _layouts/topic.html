@@ -1,0 +1,30 @@
+---
+layout: default
+---
+
+{% assign topic = site.data.topics | where: "slug", page.topic | first %}
+{% assign topic_posts = site.posts | where: "topic", page.topic %}
+
+<section class="topic-hero wrap" style="--topic-color: {{ topic.color }}">
+  <span class="topic-hero-dot" aria-hidden="true"></span>
+  <p class="eyebrow">Chủ đề</p>
+  <h1>{{ topic.name | default: page.title }}</h1>
+  <p class="page-lede">{{ topic.description | default: page.description }}</p>
+  <p class="topic-hero-count">{{ topic_posts | size }} bài viết</p>
+</section>
+
+<section class="section wrap">
+  <div class="post-grid">
+    {% for post in topic_posts %}
+      {% include post-card.html post=post %}
+    {% endfor %}
+  </div>
+
+  {% if topic_posts.size == 0 %}
+    <p class="empty-state">Chưa có bài viết nào trong chủ đề này.</p>
+  {% endif %}
+
+  <p class="post-back">
+    <a href="{{ '/chu-de/' | relative_url }}">← Xem tất cả chủ đề</a>
+  </p>
+</section>

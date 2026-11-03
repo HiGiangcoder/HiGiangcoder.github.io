@@ -1,0 +1,24 @@
+{% assign topic = site.data.topics | where: "slug", include.post.topic | first %}
+{% assign topic_name = topic.name | default: include.post.topic | default: '' %}
+{% assign tags_text = include.post.tags | join: ' ' %}
+{% assign search_text = include.post.title | append: ' ' | append: include.post.description | append: ' ' | append: topic_name | append: ' ' | append: tags_text | downcase %}
+<article class="post-card{% if include.featured %} post-card--featured{% endif %}"
+  data-topic="{{ include.post.topic }}"
+  data-search="{{ search_text | escape }}">
+  <a class="post-card-link" href="{{ include.post.url | relative_url }}">
+    <div class="post-card-meta">
+      {% if topic %}
+        <span class="topic-pill" style="--topic-color: {{ topic.color }}">{{ topic.name }}</span>
+      {% endif %}
+      <time datetime="{{ include.post.date | date_to_xmlschema }}">{{ include.post.date | date: "%-d tháng %-m, %Y" }}</time>
+    </div>
+
+    <h3 class="post-card-title">{{ include.post.title }}</h3>
+
+    {% if include.post.description %}
+      <p class="post-card-excerpt">{{ include.post.description }}</p>
+    {% endif %}
+
+    <span class="post-card-more">Đọc bài <span aria-hidden="true">→</span></span>
+  </a>
+</article>

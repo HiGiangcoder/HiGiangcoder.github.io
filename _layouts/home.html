@@ -1,0 +1,69 @@
+---
+layout: default
+---
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <p class="hero-kicker">Triết học · Tâm lý học · Xã hội · Khác</p>
+    <h1>Những câu hỏi<br>không dễ trả lời.</h1>
+    <p class="hero-lede">
+      Mình viết để hiểu rõ hơn những điều mình tin, những điều mình sợ
+      và những điều mình chưa chắc. Đây là nơi lưu lại các ghi chép
+      về cách con người suy nghĩ, cảm nhận và sống cùng nhau.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="{{ '/bai-viet/' | relative_url }}">Đọc các bài viết</a>
+      <a class="btn btn-ghost" href="{{ '/gioi-thieu/' | relative_url }}">Về blog này</a>
+    </div>
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Mới nhất</p>
+      <h2>Ghi chép gần đây</h2>
+    </div>
+    <a class="section-link" href="{{ '/bai-viet/' | relative_url }}">Tất cả bài viết <span aria-hidden="true">→</span></a>
+  </div>
+
+  <div class="post-grid">
+    {% for post in site.posts limit: 6 %}
+      {% include post-card.html post=post featured=forloop.first %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Chủ đề</p>
+      <h2>Bốn hướng ghi chép</h2>
+    </div>
+    <a class="section-link" href="{{ '/chu-de/' | relative_url }}">Xem tất cả chủ đề <span aria-hidden="true">→</span></a>
+  </div>
+
+  <div class="topic-grid">
+    {% for topic in site.data.topics %}
+      {% assign topic_posts = site.posts | where: "topic", topic.slug %}
+      <a class="topic-card" href="{{ '/chu-de/' | append: topic.slug | append: '/' | relative_url }}" style="--topic-color: {{ topic.color }}">
+        <span class="topic-card-dot" aria-hidden="true"></span>
+        <h3>{{ topic.name }}</h3>
+        <p>{{ topic.description }}</p>
+        <span class="topic-card-count">{{ topic_posts | size }} bài viết</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section wrap">
+  <div class="note-strip">
+    <p class="note-strip-title">Về blog này</p>
+    <p>
+      Đây không phải một chuyên trang học thuật. Đó là một cuốn sổ mở:
+      mỗi bài viết là một lần thử sắp xếp lại suy nghĩ, đặt câu hỏi
+      và thành thật với những chỗ mình còn mơ hồ.
+      <a href="{{ '/gioi-thieu/' | relative_url }}">Đọc thêm về mình <span aria-hidden="true">→</span></a>
+    </p>
+  </div>
+</section>

@@ -1,0 +1,28 @@
+# Bốn chủ đề chính của blog.
+# `slug` dùng cho đường dẫn và front matter của bài viết; đừng đổi tùy tiện
+# sau khi đã có bài, vì sẽ làm hỏng liên kết chủ đề.
+
+- slug: triet-hoc
+  name: Triết học
+  color: "#8a5a44"
+  description: >-
+    Những câu hỏi về tự do, ý nghĩa, tri thức và cách ta nên sống.
+
+- slug: tam-ly-hoc
+  name: Tâm lý học
+  color: "#4f6b5d"
+  description: >-
+    Cách tâm trí vận hành: cảm xúc, thói quen, động lực và các mối quan hệ.
+
+- slug: xa-hoi
+  name: Xã hội
+  color: "#4a6580"
+  description: >-
+    Cá nhân trong tập thể: bản sắc, quyền lực, mạng xã hội và đời sống chung.
+
+- slug: khac
+  name: Khác
+  color: "#6f6a5f"
+  description: >-
+    Những ghi chép không nằm gọn trong ba chủ đề còn lại — từ kỹ thuật viết,
+    học tập, công nghệ đến đời sống thường ngày.

@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# Cấu hình blog
+# Chỉ cần sửa phần này khi muốn đổi tên, mô tả hoặc thông tin cá nhân.
+# ---------------------------------------------------------------------------
+
+title: "Ghi chép của Giang"
+tagline: "Triết học, tâm lý học, xã hội và chuyện khác"
+description: >-
+  Ghi chép cá nhân của Nguyễn Trường Giang về triết học, tâm lý học,
+  xã hội và những chuyện khác — những câu hỏi không dễ trả lời.
+
+url: "https://higiangcoder.github.io"
+baseurl: ""
+
+lang: vi
+locale: vi_VN
+timezone: Asia/Ho_Chi_Minh
+
+author:
+  name: "Nguyễn Trường Giang"
+  email: "giangnt.2006.it@gmail.com"
+  github: "HiGiangcoder"
+  facebook: "NgTrGiang2006"
+
+# Đường dẫn bài viết: /bai-viet/2026/11/02/ten-file/
+permalink: /bai-viet/:year/:month/:day/:title/
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  footnote_nr: 1
+  entity_output: as_char
+  toc_levels: 1..3
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+feed:
+  excerpt_only: false
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: page
+
+# Những file/thư mục không đưa lên website
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - .bundle
+  - node_modules
+  - .github

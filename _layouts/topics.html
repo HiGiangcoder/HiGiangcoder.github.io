@@ -1,0 +1,29 @@
+---
+layout: default
+---
+
+<section class="page-hero wrap">
+  <p class="eyebrow">Chủ đề</p>
+  <h1>{{ page.title }}</h1>
+  {% if page.description %}
+    <p class="page-lede">{{ page.description }}</p>
+  {% endif %}
+</section>
+
+<section class="section wrap">
+  <div class="topic-grid topic-grid--large">
+    {% for topic in site.data.topics %}
+      {% assign topic_posts = site.posts | where: "topic", topic.slug %}
+      {% assign latest = topic_posts | first %}
+      <a class="topic-card" href="{{ '/chu-de/' | append: topic.slug | append: '/' | relative_url }}" style="--topic-color: {{ topic.color }}">
+        <span class="topic-card-dot" aria-hidden="true"></span>
+        <h2>{{ topic.name }}</h2>
+        <p>{{ topic.description }}</p>
+        <span class="topic-card-count">{{ topic_posts | size }} bài viết</span>
+        {% if latest %}
+          <span class="topic-card-latest">Mới nhất: {{ latest.title }}</span>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</section>
