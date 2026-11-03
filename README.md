@@ -68,6 +68,50 @@ Lưu file, rồi chạy local để xem trước (xem bên dưới), hoặc push
 
 ---
 
+## Thêm hoặc bớt chủ đề
+
+Chủ đề được định nghĩa ở hai nơi:
+
+1. `_data/topics.yml` — tên, slug, màu và mô tả.
+2. `chu-de/<slug>.md` — trang hiển thị bài viết của chủ đề.
+
+### Thêm chủ đề mới
+
+**Bước 1.** Thêm entry vào `_data/topics.yml`:
+
+```yaml
+- slug: ten-chu-de
+  name: Tên chủ đề
+  color: "#8a5a44"
+  description: >-
+    Mô tả ngắn về chủ đề.
+```
+
+**Bước 2.** Tạo file `chu-de/ten-chu-de.md` (hoặc copy `_templates/chu-de.md`):
+
+```yaml
+---
+layout: topic
+title: Tên chủ đề
+topic: ten-chu-de
+permalink: /chu-de/ten-chu-de/
+---
+```
+
+**Bước 3.** Viết bài với `topic: ten-chu-de`.
+
+Slug nên viết thường, không dấu, dùng dấu gạch ngang. Không đổi slug sau khi đã có bài vì đường dẫn chủ đề sẽ hỏng.
+
+### Bớt chủ đề
+
+1. Xóa entry tương ứng trong `_data/topics.yml`.
+2. Xóa file `chu-de/<slug>.md`.
+3. Đổi `topic` của các bài viết thuộc chủ đề đó sang chủ đề khác, hoặc xóa bài.
+
+Sau đó chạy `bundle exec jekyll build` để kiểm tra không còn tham chiếu tới chủ đề cũ.
+
+---
+
 ## Chạy thử trên máy (không bắt buộc)
 
 Bạn có thể bỏ qua phần này và push thẳng lên GitHub; GitHub Pages sẽ build hộ. Chạy local chỉ hữu ích khi muốn xem trước khi đăng.
@@ -182,7 +226,20 @@ Một nhận định cần dẫn nguồn.[^1]
 [^1]: Tên tác giả, *Tên sách*, Nhà xuất bản, năm.
 ```
 
-### Khối ghi chú
+### Công thức toán (MathJax)
+
+Blog đã bật **MathJax**. Viết công thức bằng `$$ ... $$`:
+
+- Inline: `$$P = O + D + S + I$$` → $$P = O + D + S + I$$
+- Hiển thị riêng dòng:
+
+```markdown
+$$
+P = O + D + S + I
+$$
+```
+
+Lưu ý: không dùng `\\(` `\\)` trực tiếp vì Markdown sẽ bỏ dấu gạch ngược. Dùng `$$...$$` cho cả hai trường hợp.
 
 Dùng HTML nhỏ này để làm nổi bật một ý:
 

@@ -8,7 +8,7 @@ eyebrow: Về blog này
 
 <img src="{{ '/assets/images/avatar.jpg' | relative_url }}" alt="Nguyễn Trường Giang" class="about-avatar">
 
-Mình là **Nguyễn Trường Giang**, sinh viên Khoa Khoa học Máy tính (Chương trình Tài năng) tại Đại học Công nghệ Thông tin — ĐHQG TP.HCM. Mình quan tâm đến thị giác máy tính và học máy, nhưng cũng dành khá nhiều thời gian để đọc những thứ không trực tiếp giúp mình viết code: triết học, tâm lý học và xã hội học.
+Mình là **Nguyễn Trường Giang**, sinh viên Khoa Khoa học Máy tính tại Đại học Công nghệ Thông tin — ĐHQG TP.HCM. Mình quan tâm đến thị giác máy tính và học máy, nhưng cũng dành khá nhiều thời gian để đọc những thứ không trực tiếp giúp mình viết code: triết học, tâm lý học và xã hội học.
 
 Blog này bắt đầu từ một thói quen đơn giản: ghi lại những gì mình đọc và những câu hỏi nó để lại. Có những câu hỏi mình không trả lời được, và mình nghĩ đó không phải là vấn đề. Điều đáng sợ hơn là sống với những câu trả lời vay mượn mà chưa từng kiểm tra lại.
 
