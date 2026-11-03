@@ -6,7 +6,6 @@ description: "Tập trung vào cơ chế tạo lập văn bản: bố cục, tr�
 tags:
   - "#ki-thuat"
 ---
-
 # 1. Mô hình thiết kế văn bản
 
 Có thể xem một văn bản là sự phối hợp của bốn lớp:

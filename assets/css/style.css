@@ -1402,6 +1402,39 @@ input {
   }
 }
 
+/* =========================================================================
+   Mục lục tự động (jekyll-toc)
+   ========================================================================= */
+
+#toc.section-nav {
+  margin: 0 0 2.25rem;
+  padding: 1rem 1.15rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  list-style: none;
+}
+
+#toc.section-nav ul {
+  list-style: none;
+  margin: 0.35rem 0 0 1.1rem;
+  padding: 0;
+}
+
+#toc.section-nav li {
+  margin: 0.2rem 0;
+  line-height: 1.45;
+}
+
+#toc.section-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+#toc.section-nav a:hover {
+  color: var(--accent);
+}
+
 /* -------------------------------------------------------------------------
    In ấn
    ------------------------------------------------------------------------- */
@@ -1426,74 +1459,4 @@ input {
     max-width: none;
     font-size: 11pt;
   }
-}
-
-/* =========================================================================
-   Mục lục bài viết (outline)
-   ========================================================================= */
-
-.post-outline {
-  margin: 0 0 2.25rem;
-  padding: 1rem 1.15rem 1.05rem;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--bg-soft);
-}
-
-.post-outline[hidden] {
-  display: none;
-}
-
-.post-outline-title {
-  margin: 0 0 0.55rem;
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-
-.post-outline-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.post-outline-item {
-  margin: 0;
-  line-height: 1.45;
-}
-
-.post-outline-item a {
-  color: var(--ink-soft);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.post-outline-item a:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.post-outline-h1 {
-  font-size: 0.98rem;
-  font-weight: 600;
-}
-
-.post-outline-h2 {
-  /* mặc định */
-}
-
-.post-outline-h3 {
-  padding-left: 1.15rem;
-  font-size: 0.92rem;
-}
-
-.post-outline-h4 {
-  padding-left: 2.3rem;
-  font-size: 0.88rem;
 }

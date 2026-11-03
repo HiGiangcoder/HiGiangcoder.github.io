@@ -23,13 +23,8 @@ layout: default
     </div>
   </header>
 
-  <aside class="post-outline" id="post-outline" aria-label="Mục lục bài viết" hidden>
-    <p class="post-outline-title">Mục lục</p>
-    <nav id="post-outline-nav"></nav>
-  </aside>
-
   <div class="post-body wrap wrap--narrow">
-    {{ content }}
+    {{ content | toc }}
   </div>
 
   <footer class="post-footer wrap wrap--narrow">

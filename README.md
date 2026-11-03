@@ -352,6 +352,7 @@ Repo tên `HiGiangcoder.github.io` là **user site** của GitHub Pages:
 Vì vậy:
 
 - Bài viết trong `_posts/` tự động thành trang.
+- Blog build bằng GitHub Actions (workflow `.github/workflows/pages.yml`) để hỗ trợ plugin `jekyll-toc`.
 - Không cần tạo nhánh `gh-pages` cho blog này.
 - Nhánh `gh-pages` cũ (nếu còn trên remote) là di sản từ site MkDocs trước đây, không ảnh hưởng tới blog. Chỉ xóa khi chắc chắn không dùng:
 
@@ -363,12 +364,11 @@ git push origin --delete gh-pages
 
 Vào **Settings → Pages** của repo:
 
-- **Source:** Deploy from a branch
-- **Branch:** `master` / `(root)`
+- **Source:** GitHub Actions
 
-Nếu repo đang để chế độ này thì không cần làm gì thêm. Nếu chuyển sang GitHub Actions, cần thêm workflow build Jekyll — nhưng với blog cá nhân đơn giản, chế độ branch là đủ và ít lỗi hơn.
+Workflow `.github/workflows/pages.yml` sẽ tự build Jekyll (kèm plugin `jekyll-toc`) mỗi khi push lên `master`. Sau khi push, theo dõi tiến trình build ở tab **Actions**.
 
-Sau khi push, có thể theo dõi tiến trình build ở tab **Actions** (mục `pages build and deployment`).
+> Vì blog dùng plugin `jekyll-toc`, **không** dùng chế độ "Deploy from a branch" (chế độ đó chạy Jekyll ở safe mode, không load plugin).
 
 ---
 
