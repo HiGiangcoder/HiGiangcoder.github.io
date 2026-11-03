@@ -106,7 +106,7 @@
   var postBody = document.querySelector(".post-body");
 
   if (outline && outlineNav && postBody) {
-    var headings = postBody.querySelectorAll("h2, h3, h4");
+    var headings = postBody.querySelectorAll("h1, h2, h3, h4");
     if (headings.length >= 2) {
       var list = document.createElement("ul");
       list.className = "post-outline-list";

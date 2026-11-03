@@ -1479,6 +1479,15 @@ input {
   border-color: var(--accent);
 }
 
+.post-outline-h1 {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.post-outline-h2 {
+  /* mặc định */
+}
+
 .post-outline-h3 {
   padding-left: 1.15rem;
   font-size: 0.92rem;
@@ -1487,29 +1496,4 @@ input {
 .post-outline-h4 {
   padding-left: 2.3rem;
   font-size: 0.88rem;
-}
-
-@media (min-width: 1180px) {
-  .post {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 3rem;
-    align-items: start;
-  }
-
-  .post-header,
-  .post-body,
-  .post-footer {
-    grid-column: 1;
-  }
-
-  .post-outline {
-    grid-column: 2;
-    grid-row: 1 / span 3;
-    position: sticky;
-    top: 6rem;
-    margin: 0;
-    max-height: calc(100vh - 8rem);
-    overflow: auto;
-  }
 }
