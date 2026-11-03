@@ -1435,6 +1435,60 @@ input {
   color: var(--accent);
 }
 
+/* =========================================================================
+   Khối mở rộng (details/summary) — ấn để mở rộng nội dung
+   ========================================================================= */
+
+details {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-soft);
+}
+
+details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: "▸ ";
+  color: var(--accent);
+}
+
+details[open] > summary::before {
+  content: "▾ ";
+}
+
+details[open] {
+  padding-bottom: 0.6rem;
+}
+
+/* =========================================================================
+   Bình luận (Giscus)
+   ========================================================================= */
+
+.comments {
+  margin-top: 2.5rem;
+}
+
+.comments-title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.giscus,
+.giscus-frame {
+  width: 100%;
+}
+
 /* -------------------------------------------------------------------------
    In ấn
    ------------------------------------------------------------------------- */

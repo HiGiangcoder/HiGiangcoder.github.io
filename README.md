@@ -422,6 +422,63 @@ Sửa hai chỗ:
 - `_includes/footer.html` — link ở footer.
 - `gioi-thieu.md` — các nút ở trang giới thiệu.
 
+### Khối mở rộng (đóng/mở)
+
+Dùng HTML `<details markdown="1">` (có `markdown="1"`) để nội dung bên trong vẫn được xử lý Markdown:
+
+```markdown
+<details markdown="1">
+  <summary>Bấm để xem thêm</summary>
+
+  Nội dung ẩn **Markdown**.
+
+  - Mục 1
+  - Mục 2
+
+</details>
+```
+
+Thiếu `markdown="1"` sẽ làm nội dung hiển thị thô (không in đậm, không danh sách). Nếu không muốn dùng Markdown bên trong, có thể bỏ `markdown="1"` và viết văn bản/HTML thường.
+
+**Cách an toàn (khuyến nghị nếu dùng nhiều Markdown):**
+
+```markdown
+{% capture noi_dung %}
+Nội dung ẩn **Markdown**.
+
+- Mục 1
+- Mục 2
+{% endcapture %}
+
+{% include details.html summary="Bấm để xem thêm" content=noi_dung %}
+```
+
+---
+
+## Bình luận (Giscus)
+
+Blog dùng **Giscus** (GitHub Discussions) cho bình luận ở cuối mỗi bài viết.
+
+### Đã cấu hình
+
+- Repo: `HiGiangcoder/HiGiangcoder.github.io`
+- Category: `General`
+- Mapping: `pathname` (mỗi bài viết = 1 discussion)
+
+### Bật/tắt hoặc đổi category
+
+Sửa các giá trị `data-*` trong `_layouts/post.html` (phần `<script src="https://giscus.app/client.js" ...>`).
+
+### Yêu cầu trên GitHub
+
+1. Vào **Settings → Features → Discussions** và bật.
+2. Cài Giscus app: <https://github.com/apps/giscus>.
+3. Tạo category trong Discussions (ví dụ `General`).
+
+### Đồng bộ sáng/tối
+
+Script trong `_layouts/post.html` tự gửi message tới iframe Giscus khi bạn bấm nút đổi theme.
+
 ---
 
 ## Những lỗi thường gặp
