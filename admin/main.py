@@ -727,7 +727,11 @@ def delete_asset(filename: str, asset_name: str):
 
 
 @app.post("/posts/{filename}/unpublish")
-def unpublish_post(request: Request, filename: str):
+def unpublish_post(
+    request: Request,
+    filename: str,
+    x_requested_with: str | None = Header(default=None),
+):
     path = POSTS_DIR / filename
     if not path.exists():
         raise HTTPException(404, "Không tìm thấy bài viết.")
@@ -753,7 +757,11 @@ def unpublish_post(request: Request, filename: str):
 
 
 @app.post("/posts/{filename}/republish")
-def republish_post(request: Request, filename: str):
+def republish_post(
+    request: Request,
+    filename: str,
+    x_requested_with: str | None = Header(default=None),
+):
     path = POSTS_DIR / filename
     if not path.exists():
         raise HTTPException(404, "Không tìm thấy bài viết.")
