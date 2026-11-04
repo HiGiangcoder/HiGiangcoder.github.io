@@ -6,7 +6,7 @@ description: Object writing cung cấp cho bạn một phương pháp để vi�
   khác biệt của phương pháp này so với cách viết thông thường là bạn phải tập trung
   và sử dụng toàn bộ các giác quan của bạn vào vật thể đó. Ngoài lợi ích về mặt văn
   học, phương pháp này cũng gián tiếp định hình lại cách bạn nhìn nhận thế giới xung
-  quanh.
+  quanh. Nội dung dưới đây được dịch từ bản tiếng anh của tác giả Pat Pattison.
 tags:
 - object-writing
 ---
