@@ -24,14 +24,28 @@
     <tr>
       <td>
         <strong>{{ post.title }}</strong>
+        {% if post.tracked %}
+          <span class="pill">Đã đăng GitHub</span>
+        {% else %}
+          <span class="pill">Chưa đăng GitHub</span>
+        {% endif %}
         {% if post.description %}<div class="muted small">{{ post.description }}</div>{% endif %}
       </td>
       <td class="nowrap">{{ post.date }}</td>
       <td><span class="pill">{{ post.topic }}</span></td>
       <td class="actions">
         <a class="btn" href="/posts/{{ post.filename }}/edit">Sửa</a>
-        <form method="post" action="/posts/{{ post.filename }}/delete" onsubmit="return confirm('Xóa bài viết này?');">
-          <button class="btn danger" type="submit">Xóa</button>
+        {% if post.tracked %}
+          <form method="post" action="/posts/{{ post.filename }}/unpublish">
+            <button class="btn" type="submit" title="Gỡ bài khỏi GitHub nhưng vẫn giữ file local">Gỡ GitHub</button>
+          </form>
+        {% else %}
+          <form method="post" action="/posts/{{ post.filename }}/republish">
+            <button class="btn primary" type="submit" title="Đăng lại bài lên GitHub">Đăng lại</button>
+          </form>
+        {% endif %}
+        <form method="post" action="/posts/{{ post.filename }}/delete" onsubmit="return confirm('Xóa bài viết này trên máy local?');">
+          <button class="btn danger" type="submit">Xóa local</button>
         </form>
       </td>
     </tr>

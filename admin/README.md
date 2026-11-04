@@ -55,6 +55,7 @@ admin/
 - Xem trước bài viết trong iframe.
 - Cài đặt admin và page.
 - Chọn file cần commit hoặc commit toàn bộ, sau đó push GitHub.
+- Gỡ bài khỏi GitHub nhưng vẫn giữ file local, và đăng lại khi cần.
 
 ## Biến môi trường
 

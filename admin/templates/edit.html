@@ -123,6 +123,23 @@
         Phím tắt: <code>Ctrl+Enter</code> lưu ngay, <code>Ctrl+Z</code> hoàn tác, <code>Ctrl+Y</code> làm lại, <code>Ctrl+B</code> đậm, <code>Ctrl+I</code> nghiêng.
       </p>
     </form>
+
+    {% if mode == 'edit' %}
+    <section class="panel">
+      <h2>Trạng thái GitHub</h2>
+      {% if tracked %}
+        <p class="muted small">Bài này đang được đăng trên GitHub. Bạn có thể gỡ nó khỏi GitHub nhưng vẫn giữ file trên máy.</p>
+        <form method="post" action="/posts/{{ filename|urlencode }}/unpublish">
+          <button class="btn" type="submit">Gỡ khỏi GitHub</button>
+        </form>
+      {% else %}
+        <p class="muted small">Bài này chưa được đăng trên GitHub hoặc đã bị gỡ. Bạn có thể đăng lại.</p>
+        <form method="post" action="/posts/{{ filename|urlencode }}/republish">
+          <button class="btn primary" type="submit">Đăng lại lên GitHub</button>
+        </form>
+      {% endif %}
+    </section>
+    {% endif %}
   </div>
 
   <aside class="edit-side">

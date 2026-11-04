@@ -298,6 +298,7 @@ def list_posts() -> list[dict]:
                 "date": meta.get("date", ""),
                 "topic": meta.get("topic", ""),
                 "description": meta.get("description", ""),
+                "tracked": is_tracked(f"_posts/{path.name}"),
             }
         )
     return items
@@ -406,6 +407,51 @@ def save_post_values(
         content,
     )
     return filename, saved_path
+
+
+def is_tracked(rel_path: str) -> bool:
+    result = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", rel_path],
+        cwd=REPO_DIR,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def run_git_publish(message: str, paths: list[str], remove: bool = False) -> str:
+    author_name = os.environ.get("GIT_AUTHOR_NAME", "Blog Admin")
+    author_email = os.environ.get("GIT_AUTHOR_EMAIL", "blog-admin@example.com")
+    commands = []
+
+    if remove:
+        commands.append(["git", "rm", "--cached", "-r", "--ignore-unmatch", "--", *paths])
+    else:
+        commands.append(["git", "add", "-A", "--", *paths])
+
+    commands.extend(
+        [
+            [
+                "git",
+                "-c",
+                f"user.name={author_name}",
+                "-c",
+                f"user.email={author_email}",
+                "commit",
+                "-m",
+                message or "Cập nhật blog",
+            ],
+            ["git", "push", "origin", "master"],
+        ]
+    )
+
+    outputs = []
+    for cmd in commands:
+        result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True)
+        outputs.append(f"$ {' '.join(cmd)}\\n{result.stdout}{result.stderr}".strip())
+        if result.returncode != 0:
+            break
+    return "\\n\\n".join(outputs)
 
 
 def post_preview_url(filename: str, post_date: str) -> str:
@@ -517,6 +563,7 @@ def edit_post(request: Request, filename: str):
             "content": content,
             "topics": load_topics(),
             "assets": list_assets(filename),
+            "tracked": is_tracked(f"_posts/{filename}"),
             "post_url": post_preview_url(filename, meta["date"]),
             "preview_ratio": load_site_data().get("preview_ratio", "1:2"),
             "admin_settings": load_site_data().get("admin", {}),
@@ -662,6 +709,58 @@ def delete_asset(filename: str, asset_name: str):
     if not any(folder.iterdir()):
         folder.rmdir()
     return RedirectResponse(f"/posts/{filename}/edit", status_code=303)
+
+
+@app.post("/posts/{filename}/unpublish")
+def unpublish_post(request: Request, filename: str):
+    path = POSTS_DIR / filename
+    if not path.exists():
+        raise HTTPException(404, "Không tìm thấy bài viết.")
+    if not is_tracked(f"_posts/{filename}"):
+        raise HTTPException(400, "Bài viết chưa được đăng trên GitHub.")
+
+    try:
+        meta, _ = load_post(path)
+        title = meta.get("title", filename)
+    except Exception:
+        title = filename
+
+    paths = [f"_posts/{filename}"]
+    asset_rel = f"assets/images/bai-viet/{Path(filename).stem}"
+    if (REPO_DIR / asset_rel).exists():
+        paths.append(asset_rel)
+
+    outputs = run_git_publish(f"Gỡ bài khỏi GitHub: {title}", paths, remove=True)
+    return templates.TemplateResponse(
+        "publish.html",
+        {"request": request, "outputs": outputs, "preview_url": PREVIEW_URL},
+    )
+
+
+@app.post("/posts/{filename}/republish")
+def republish_post(request: Request, filename: str):
+    path = POSTS_DIR / filename
+    if not path.exists():
+        raise HTTPException(404, "Không tìm thấy bài viết.")
+    if is_tracked(f"_posts/{filename}"):
+        raise HTTPException(400, "Bài viết đã được đăng trên GitHub.")
+
+    try:
+        meta, _ = load_post(path)
+        title = meta.get("title", filename)
+    except Exception:
+        title = filename
+
+    paths = [f"_posts/{filename}"]
+    asset_rel = f"assets/images/bai-viet/{Path(filename).stem}"
+    if (REPO_DIR / asset_rel).exists():
+        paths.append(asset_rel)
+
+    outputs = run_git_publish(f"Đăng lại bài: {title}", paths, remove=False)
+    return templates.TemplateResponse(
+        "publish.html",
+        {"request": request, "outputs": outputs, "preview_url": PREVIEW_URL},
+    )
 
 
 @app.post("/posts/{filename}/delete")

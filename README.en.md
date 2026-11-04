@@ -188,6 +188,7 @@ The `admin/` directory is a separate management web app.
 - Live post preview in an iframe.
 - Admin and page settings.
 - Select files to commit or commit all, then push to GitHub.
+- Unpublish a post from GitHub while keeping it locally, and republish it later.
 
 ### 4.2. Run with Docker (recommended)
 
