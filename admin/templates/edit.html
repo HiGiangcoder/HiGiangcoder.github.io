@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Viết bài mới' if mode == 'new' else 'Sửa bài' }} · Blog Admin{% endblock %}
+{% block main_class %}wrap-wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Viết bài mới' if mode == 'new' else 'Sửa bài' }}</h1>
+    {% if filename %}<p class="muted">{{ filename }}</p>{% endif %}
+  </div>
+  <div class="head-actions">
+    {% if mode == 'edit' %}
+      <button type="button" class="btn" id="toggle-side">Đổi bên tài nguyên</button>
+    {% endif %}
+    <a class="btn" href="/">← Danh sách</a>
+  </div>
+</div>
+
+{% set _ratio = (preview_ratio or '1:2').split(':') %}
+{% set _content_fr = _ratio[1] %}
+{% set _preview_fr = _ratio[0] %}
+<div class="edit-layout" id="edit-layout" style="--grid-cols: minmax(0, {{ _content_fr }}fr) {{ _preview_fr }}fr; --grid-cols-left: {{ _preview_fr }}fr minmax(0, {{ _content_fr }}fr);">
+  <div class="edit-main">
+    <form id="post-form" class="editor" method="post" action="{% if mode == 'new' %}/posts/new{% else %}/posts/{{ filename|urlencode }}/edit{% endif %}">
+      <div class="grid-3">
+        <label>
+          <span>Tiêu đề</span>
+          <input type="text" name="title" value="{{ meta.title }}" required autofocus>
+        </label>
+        <label>
+          <span>Ngày</span>
+          <input type="date" name="post_date" value="{{ meta.date }}" required>
+        </label>
+        <label>
+          <span>Giờ:phút</span>
+          <input type="time" name="post_time" value="{{ meta.time or '00:00' }}" required>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          <span>Chủ đề</span>
+          <select name="topic" required>
+            <option value="">— Chọn chủ đề —</option>
+            {% for topic in topics %}
+              <option value="{{ topic.slug }}" {% if topic.slug == meta.topic %}selected{% endif %}>
+                {{ topic.name }} ({{ topic.slug }})
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>Tags (cách nhau bằng dấu phẩy)</span>
+          <input type="text" name="tags" value="{% if meta.tags %}{% if meta.tags is string %}{{ meta.tags }}{% else %}{{ meta.tags|join(', ') }}{% endif %}{% endif %}">
+        </label>
+      </div>
+
+      <label>
+        <span>Mô tả ngắn</span>
+        <input type="text" name="description" value="{{ meta.description }}">
+      </label>
+
+      <div class="content-label-row">
+        <span>Nội dung Markdown</span>
+        {% if mode == 'edit' %}
+        <div class="autosave-box">
+          <label class="autosave-toggle">
+            <input type="checkbox" id="autosave-toggle">
+            <span>Tự động lưu</span>
+          </label>
+          <span id="save-status" class="save-status" aria-live="polite">Sẵn sàng</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="md-toolbar" id="md-toolbar" role="toolbar" aria-label="Chèn nhanh Markdown và HTML">
+        <button type="button" class="tool-btn" data-md="undo" title="Hoàn tác (Ctrl+Z)">↶</button>
+        <button type="button" class="tool-btn" data-md="redo" title="Làm lại (Ctrl+Y)">↷</button>
+        <span class="toolbar-sep" aria-hidden="true"></span>
+        <button type="button" class="tool-btn" data-md="bold" title="In đậm (Ctrl+B)"><strong>B</strong></button>
+        <button type="button" class="tool-btn" data-md="italic" title="In nghiêng (Ctrl+I)"><em>I</em></button>
+        <button type="button" class="tool-btn" data-md="underline" title="Gạch chân"><u>U</u></button>
+        <button type="button" class="tool-btn" data-md="strike" title="Gạch ngang"><s>S</s></button>
+        <button type="button" class="tool-btn" data-md="h2" title="Tiêu đề cấp 2">H2</button>
+        <button type="button" class="tool-btn" data-md="h3" title="Tiêu đề cấp 3">H3</button>
+        <button type="button" class="tool-btn" data-md="quote" title="Trích dẫn">❝</button>
+        <button type="button" class="tool-btn" data-md="ul" title="Danh sách">•</button>
+        <button type="button" class="tool-btn" data-md="ol" title="Danh sách đánh số">1.</button>
+        <button type="button" class="tool-btn" data-md="link" title="Liên kết">🔗</button>
+        <button type="button" class="tool-btn" data-md="code" title="Code ngắn">`code`</button>
+        <button type="button" class="tool-btn" data-md="codeblock" title="Khối code">```</button>
+        <span class="toolbar-sep" aria-hidden="true"></span>
+        <button type="button" class="tool-btn" data-md="details" title="Thẻ details / summary">&lt;details&gt;</button>
+        <button type="button" class="tool-btn" data-md="mark" title="Đánh dấu"><mark>Mark</mark></button>
+        <button type="button" class="tool-btn" data-md="small" title="Chữ nhỏ">Small</button>
+        <button type="button" class="tool-btn" data-md="sup" title="Chỉ số trên">x²</button>
+        <button type="button" class="tool-btn" data-md="sub" title="Chỉ số dưới">x₂</button>
+        <button type="button" class="tool-btn" data-md="center" title="Căn giữa">Center</button>
+        <span class="color-tool">
+          <input type="color" id="text-color" value="#8a5a44" title="Chọn màu chữ">
+          <button type="button" class="tool-btn" data-md="color" title="Màu chữ">Color</button>
+        </span>
+        <button type="button" class="tool-btn" data-md="hr" title="Đường kẻ ngang">—</button>
+      </div>
+
+      <textarea id="content" name="content" rows="28" spellcheck="false" style="height: {{ admin_settings.editor_height or 560 }}px;">{{ content }}</textarea>
+
+      {% if mode == 'edit' %}
+      <p class="muted small paste-hint" id="paste-status" aria-live="polite">
+        Mẹo: copy ảnh rồi dán trực tiếp (Ctrl+V) vào ô nội dung — ảnh sẽ tự được tải lên và chèn Markdown.
+      </p>
+      {% endif %}
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Lưu bài</button>
+        {% if mode == 'edit' %}
+          <button class="btn" type="button" id="save-now">Lưu ngay (Ctrl+Enter)</button>
+          <a class="btn" id="post-preview-link" href="{{ post_url }}" target="_blank" rel="noopener">Xem bài trên blog ↗</a>
+        {% endif %}
+        <a class="btn" href="{{ preview_url }}" target="_blank" rel="noopener">Xem site ↗</a>
+      </div>
+
+      <p class="shortcut-hint muted small">
+        Phím tắt: <code>Ctrl+Enter</code> lưu ngay, <code>Ctrl+Z</code> hoàn tác, <code>Ctrl+Y</code> làm lại, <code>Ctrl+B</code> đậm, <code>Ctrl+I</code> nghiêng.
+      </p>
+    </form>
+  </div>
+
+  <aside class="edit-side">
+    {% if mode == 'edit' %}
+    <section class="panel stack asset-panel">
+      <div>
+        <h2>Tài nguyên của bài</h2>
+        <p class="muted small">
+          Ảnh, PDF, video... được lưu tại
+          <code>assets/images/bai-viet/{{ filename.rsplit('.', 1)[0] }}/</code>.
+          Bấm <strong>Copy path</strong>, <strong>Copy Markdown</strong> hoặc <strong>Chèn ảnh</strong>.
+        </p>
+      </div>
+
+      <form class="asset-upload" method="post" action="/posts/{{ filename|urlencode }}/assets" enctype="multipart/form-data">
+        <input type="file" name="files" multiple required>
+        <button class="btn primary" type="submit">Tải file lên</button>
+      </form>
+      <p class="muted small">
+        Hỗ trợ: JPG, PNG, GIF, WEBP, SVG, AVIF, PDF, MP4, WEBM, MP3, TXT, ZIP.
+        Tối đa 25 MB mỗi file và 20 file mỗi lần.
+      </p>
+
+      {% if assets %}
+      <ul class="asset-list">
+        {% for asset in assets %}
+        <li class="asset-item">
+          <div class="asset-thumb">
+            {% if asset.is_image %}
+              <img src="{{ asset.preview_url }}" alt="{{ asset.name }}" loading="lazy">
+            {% else %}
+              <span>{{ asset.name.rsplit('.', 1)[-1]|upper }}</span>
+            {% endif %}
+          </div>
+
+          <div class="asset-info">
+            <div class="asset-name" title="{{ asset.name }}">{{ asset.name }}</div>
+            <div class="asset-meta">
+              <code>{{ asset.path }}</code>
+              <span>{{ asset.size_label }}</span>
+            </div>
+            <div class="asset-actions">
+              <button type="button" class="btn" data-copy="{{ asset.url_expr }}" title="{{ asset.url_expr }}">Copy path</button>
+              <button type="button" class="btn" data-copy="{{ asset.markdown }}">Copy Markdown</button>
+              {% if asset.is_image %}
+                <button type="button" class="btn" data-insert="{{ asset.markdown }}">Chèn ảnh</button>
+              {% endif %}
+            </div>
+          </div>
+
+          <form method="post" action="/posts/{{ filename|urlencode }}/assets/{{ asset.name|urlencode }}/delete" onsubmit="return confirm('Xóa file này khỏi bài viết?');">
+            <button class="btn danger" type="submit">Xóa</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">Chưa có tài nguyên nào cho bài viết này.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="panel-head-row">
+        <h2>Xem trước bài viết</h2>
+        <div class="preview-actions">
+          <label class="follow-toggle" title="Tự động cuộn preview theo con trỏ trong nội dung">
+            <input type="checkbox" id="preview-follow">
+            <span>Theo con trỏ</span>
+          </label>
+          <button type="button" class="btn" id="reload-preview">Làm mới</button>
+          <a class="btn" id="preview-external" href="{{ post_url }}" target="_blank" rel="noopener">Mở tab ↗</a>
+        </div>
+      </div>
+      <p class="muted small">Nội dung mới sẽ hiện sau khi lưu và Jekyll build lại.</p>
+      <iframe
+        id="preview-frame"
+        class="preview-frame"
+        src="{{ post_url }}"
+        data-base="{{ post_url }}"
+        title="Xem trước bài viết"
+        loading="lazy"
+        style="height: {{ admin_settings.preview_height or 900 }}px;"
+      ></iframe>
+    </section>
+    {% else %}
+    <section class="panel">
+      <h2>Tài nguyên của bài</h2>
+      <p class="muted">Lưu bài viết trước. Sau khi lưu, bạn có thể tải ảnh, file đính kèm và xem trước bài viết.</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+
+<script>
+  (function () {
+    var isEdit = {{ (mode == 'edit')|tojson }};
+    var currentFilename = {{ filename|tojson }};
+    var pasteUrl = isEdit ? {{ ('/posts/' ~ filename ~ '/assets/paste')|tojson }} : "";
+    var autosaveUrl = isEdit ? {{ ('/posts/' ~ filename ~ '/autosave')|tojson }} : "";
+
+    var form = document.getElementById("post-form");
+    var contentArea = document.getElementById("content");
+    var pasteStatus = document.getElementById("paste-status");
+
+    var historyStack = [];
+    var historyIndex = -1;
+    var restoringHistory = false;
+
+    function pushHistory() {
+      if (!contentArea || restoringHistory) return;
+      var state = {
+        value: contentArea.value,
+        start: contentArea.selectionStart,
+        end: contentArea.selectionEnd
+      };
+      if (historyIndex >= 0 && historyStack[historyIndex].value === state.value) return;
+      historyStack = historyStack.slice(0, historyIndex + 1);
+      historyStack.push(state);
+      historyIndex = historyStack.length - 1;
+    }
+
+    function restoreHistory(state) {
+      if (!contentArea || !state) return;
+      restoringHistory = true;
+      contentArea.value = state.value;
+      contentArea.selectionStart = state.start;
+      contentArea.selectionEnd = state.end;
+      contentArea.focus();
+      notifyChange();
+      restoringHistory = false;
+    }
+
+    if (contentArea) {
+      pushHistory();
+      contentArea.addEventListener("input", function () {
+        if (!restoringHistory) pushHistory();
+      });
+
+      function cursorRatio() {
+        var length = contentArea.value.length || 1;
+        var position = contentArea.selectionStart || 0;
+        return Math.max(0, Math.min(1, position / length));
+      }
+
+      var autoFollowCursor = window.localStorage.getItem("blog-admin-preview-follow") !== "0";
+      var lastPreviewRatio = autoFollowCursor ? cursorRatio() : 0.5;
+      var pendingPreviewRatio = null;
+
+      var followToggle = document.getElementById("preview-follow");
+      if (followToggle) {
+        followToggle.checked = autoFollowCursor;
+        followToggle.addEventListener("change", function () {
+          autoFollowCursor = followToggle.checked;
+          window.localStorage.setItem(
+            "blog-admin-preview-follow",
+            autoFollowCursor ? "1" : "0"
+          );
+          if (autoFollowCursor) {
+            sendPreviewRatio(cursorRatio());
+          }
+        });
+      }
+
+      function sendPreviewRatio(ratio) {
+        if (!previewFrame || !previewFrame.contentWindow) return;
+        ratio = Math.max(0, Math.min(1, ratio));
+        lastPreviewRatio = ratio;
+        try {
+          previewFrame.contentWindow.postMessage(
+            { type: "admin-scroll", ratio: ratio },
+            "*"
+          );
+        } catch (error) {
+          // Bỏ qua nếu iframe chưa sẵn sàng.
+        }
+      }
+
+      function syncPreviewScroll() {
+        if (!autoFollowCursor) return;
+        sendPreviewRatio(cursorRatio());
+      }
+
+      contentArea.addEventListener("scroll", syncPreviewScroll);
+      contentArea.addEventListener("keyup", syncPreviewScroll);
+      contentArea.addEventListener("click", syncPreviewScroll);
+      contentArea.addEventListener("select", syncPreviewScroll);
+      contentArea.addEventListener("input", syncPreviewScroll);
+
+      if (previewFrame) {
+        previewFrame.addEventListener("load", function () {
+          window.setTimeout(function () {
+            var ratio = pendingPreviewRatio;
+            pendingPreviewRatio = null;
+            if (ratio === null) {
+              ratio = autoFollowCursor ? cursorRatio() : lastPreviewRatio;
+            }
+            sendPreviewRatio(ratio);
+          }, 700);
+          window.setTimeout(function () {
+            sendPreviewRatio(lastPreviewRatio);
+          }, 1800);
+        });
+      }
+    }
+    var saveStatus = document.getElementById("save-status");
+    var autosaveToggle = document.getElementById("autosave-toggle");
+    var saveNowButton = document.getElementById("save-now");
+    var previewFrame = document.getElementById("preview-frame");
+    var previewLink = document.getElementById("post-preview-link");
+    var previewExternal = document.getElementById("preview-external");
+    var toolbar = document.getElementById("md-toolbar");
+    var textColor = document.getElementById("text-color");
+    var layout = document.getElementById("edit-layout");
+    var toggleSide = document.getElementById("toggle-side");
+
+    function setPasteStatus(text, isError) {
+      if (!pasteStatus) return;
+      pasteStatus.textContent = text;
+      pasteStatus.classList.toggle("error", !!isError);
+    }
+
+    function setSaveStatus(text, kind) {
+      if (!saveStatus) return;
+      saveStatus.textContent = text;
+      saveStatus.className = "save-status" + (kind ? " " + kind : "");
+    }
+
+    function notifyChange() {
+      if (!contentArea) return;
+      contentArea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function selectedText() {
+      return contentArea.value.slice(contentArea.selectionStart, contentArea.selectionEnd);
+    }
+
+    function replaceSelection(before, after, placeholder) {
+      var start = contentArea.selectionStart;
+      var end = contentArea.selectionEnd;
+      var selected = contentArea.value.slice(start, end) || placeholder || "";
+      var text = before + selected + after;
+      contentArea.setRangeText(text, start, end, "end");
+      contentArea.focus();
+      contentArea.selectionStart = start + before.length;
+      contentArea.selectionEnd = start + before.length + selected.length;
+      notifyChange();
+    }
+
+    function transformLines(prefix, numbered) {
+      var value = contentArea.value;
+      var start = contentArea.selectionStart;
+      var end = contentArea.selectionEnd;
+      var from = value.lastIndexOf("\n", start - 1) + 1;
+      var to = value.indexOf("\n", end);
+      if (to === -1) to = value.length;
+
+      var block = value.slice(from, to);
+      var lines = block.split("\n").map(function (line, index) {
+        var cleaned = line.replace(/^#{1,6}\s+|^[-*+]\s+|^\d+\.\s+/, "");
+        return (numbered ? (index + 1) + ". " : prefix) + cleaned;
+      });
+      contentArea.setRangeText(lines.join("\n"), from, to, "end");
+      contentArea.focus();
+      contentArea.selectionStart = from;
+      contentArea.selectionEnd = from + lines.join("\n").length;
+      notifyChange();
+    }
+
+    function insertBlock(text) {
+      var start = contentArea.selectionStart;
+      var end = contentArea.selectionEnd;
+      contentArea.setRangeText(text, start, end, "end");
+      contentArea.focus();
+      notifyChange();
+    }
+
+    if (toolbar && contentArea) {
+      toolbar.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-md]");
+        if (!button) return;
+        var action = button.dataset.md;
+        var selected = selectedText();
+
+        if (action === "undo") {
+          if (historyIndex > 0) restoreHistory(historyStack[--historyIndex]);
+        } else if (action === "redo") {
+          if (historyIndex < historyStack.length - 1) restoreHistory(historyStack[++historyIndex]);
+        } else if (action === "bold") replaceSelection("**", "**", "chữ đậm");
+        else if (action === "italic") replaceSelection("*", "*", "chữ nghiêng");
+        else if (action === "underline") replaceSelection("<u>", "</u>", "chữ gạch chân");
+        else if (action === "strike") replaceSelection("<s>", "</s>", "chữ gạch ngang");
+        else if (action === "h2") transformLines("## ");
+        else if (action === "h3") transformLines("### ");
+        else if (action === "quote") transformLines("> ");
+        else if (action === "ul") transformLines("- ");
+        else if (action === "ol") transformLines("", true);
+        else if (action === "link") replaceSelection("[", "](https://)", "liên kết");
+        else if (action === "code") replaceSelection("`", "`", "code");
+        else if (action === "codeblock") insertBlock("\n```\n" + (selected || "code") + "\n```\n");
+        else if (action === "details") {
+          insertBlock(
+            "<details>\n<summary>Tiêu đề</summary>\n\n" +
+            (selected || "Nội dung chi tiết...") +
+            "\n\n</details>\n"
+          );
+        } else if (action === "mark") {
+          replaceSelection("<mark>", "</mark>", "chữ đánh dấu");
+        } else if (action === "small") {
+          replaceSelection("<small>", "</small>", "chữ nhỏ");
+        } else if (action === "sup") {
+          replaceSelection("<sup>", "</sup>", "chữ chỉ số trên");
+        } else if (action === "sub") {
+          replaceSelection("<sub>", "</sub>", "chữ chỉ số dưới");
+        } else if (action === "center") {
+          replaceSelection('<div style="text-align: center">', "</div>", "nội dung căn giữa");
+        } else if (action === "color") {
+          var color = textColor ? textColor.value : "#8a5a44";
+          replaceSelection(
+            '<span style="color: ' + color + '">',
+            "</span>",
+            "chữ màu"
+          );
+        } else if (action === "hr") {
+          insertBlock("\n\n---\n\n");
+        }
+      });
+    }
+
+    if (contentArea) {
+      contentArea.addEventListener("keydown", function (event) {
+        if (!(event.ctrlKey || event.metaKey)) return;
+        var key = event.key.toLowerCase();
+        if (key === "b") {
+          event.preventDefault();
+          replaceSelection("**", "**", "chữ đậm");
+        } else if (key === "i") {
+          event.preventDefault();
+          replaceSelection("*", "*", "chữ nghiêng");
+        }
+      });
+
+      contentArea.addEventListener("paste", function (event) {
+        if (!isEdit) return;
+        var items = event.clipboardData && event.clipboardData.items
+          ? Array.prototype.slice.call(event.clipboardData.items)
+          : [];
+        var files = items
+          .filter(function (item) {
+            return item.kind === "file" && item.type.indexOf("image/") === 0;
+          })
+          .map(function (item) { return item.getAsFile(); })
+          .filter(Boolean);
+
+        if (!files.length) return;
+
+        event.preventDefault();
+        var start = contentArea.selectionStart;
+        var end = contentArea.selectionEnd;
+
+        function uploadAt(index, markdowns) {
+          if (index >= files.length) {
+            if (markdowns.length) {
+              contentArea.setRangeText(
+                markdowns.map(function (item) { return item + "\n"; }).join(""),
+                start,
+                end,
+                "end"
+              );
+              contentArea.focus();
+              notifyChange();
+              setPasteStatus("Đã chèn " + markdowns.length + " ảnh.");
+            }
+            return;
+          }
+
+          var file = files[index];
+          var data = new FormData();
+          data.append("file", file, file.name || ("clipboard-" + (index + 1) + ".png"));
+          setPasteStatus("Đang tải ảnh " + (index + 1) + "/" + files.length + "...");
+
+          fetch(pasteUrl, { method: "POST", body: data })
+            .then(function (response) {
+              return response.json().then(function (body) {
+                if (!response.ok) {
+                  throw new Error(body.detail || "Tải ảnh thất bại.");
+                }
+                return body.asset;
+              });
+            })
+            .then(function (asset) {
+              markdowns.push(asset.markdown);
+              uploadAt(index + 1, markdowns);
+            })
+            .catch(function (error) {
+              setPasteStatus(error.message || "Tải ảnh thất bại.", true);
+            });
+        }
+
+        uploadAt(0, []);
+      });
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise(function (resolve, reject) {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        try {
+          document.execCommand("copy") ? resolve() : reject();
+        } catch (err) {
+          reject(err);
+        } finally {
+          document.body.removeChild(area);
+        }
+      });
+    }
+
+    function flash(button, label) {
+      var original = button.dataset.original || button.textContent;
+      button.dataset.original = original;
+      button.textContent = label;
+      window.setTimeout(function () {
+        button.textContent = original;
+      }, 1400);
+    }
+
+    document.addEventListener("click", function (event) {
+      var copyButton = event.target.closest("[data-copy]");
+      if (copyButton) {
+        copyText(copyButton.dataset.copy)
+          .then(function () { flash(copyButton, "Đã copy ✓"); })
+          .catch(function () { flash(copyButton, "Không copy được"); });
+        return;
+      }
+
+      var insertButton = event.target.closest("[data-insert]");
+      if (insertButton && contentArea) {
+        var start = contentArea.selectionStart;
+        var end = contentArea.selectionEnd;
+        contentArea.setRangeText(insertButton.dataset.insert + "\n", start, end, "end");
+        contentArea.focus();
+        notifyChange();
+        flash(insertButton, "Đã chèn ✓");
+      }
+    });
+
+    if (layout && toggleSide) {
+      if (window.localStorage.getItem("blog-admin-assets-side") === "left") {
+        layout.classList.add("assets-left");
+      }
+      toggleSide.addEventListener("click", function () {
+        layout.classList.toggle("assets-left");
+        window.localStorage.setItem(
+          "blog-admin-assets-side",
+          layout.classList.contains("assets-left") ? "left" : "right"
+        );
+      });
+    }
+
+    // Độ rộng cột được điều khiển bởi setting preview_ratio từ server.
+
+    function updatePreviewUrls(url) {
+      if (!url) return;
+      if (previewFrame) previewFrame.dataset.base = url;
+      if (previewLink) previewLink.href = url;
+      if (previewExternal) previewExternal.href = url;
+    }
+
+    function reloadPreview(delay) {
+      if (!previewFrame) return;
+      window.setTimeout(function () {
+        pendingPreviewRatio = lastPreviewRatio;
+        var base = previewFrame.dataset.base || previewFrame.src;
+        var ratio = encodeURIComponent(String(lastPreviewRatio));
+        previewFrame.src =
+          base +
+          (base.indexOf("?") === -1 ? "?" : "&") +
+          "t=" +
+          Date.now() +
+          "&admin_scroll=" +
+          ratio;
+      }, delay || 700);
+    }
+
+    var reloadButton = document.getElementById("reload-preview");
+    if (reloadButton) {
+      reloadButton.addEventListener("click", function () {
+        reloadPreview(0);
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      var key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) {
+        if (historyIndex > 0) {
+          restoreHistory(historyStack[--historyIndex]);
+          event.preventDefault();
+        }
+      } else if (key === "y" || (event.shiftKey && key === "z")) {
+        if (historyIndex < historyStack.length - 1) {
+          restoreHistory(historyStack[++historyIndex]);
+          event.preventDefault();
+        }
+      } else if (key === "enter" && !isEdit) {
+        event.preventDefault();
+        if (form) form.requestSubmit();
+      }
+    });
+
+    if (!isEdit) {
+      return;
+    }
+
+    var autoEnabled = window.localStorage.getItem("blog-admin-autosave") !== "0";
+    var version = 0;
+    var savedVersion = 0;
+    var saveTimer = null;
+    var saving = false;
+    var saveAgain = false;
+
+    if (autosaveToggle) {
+      autosaveToggle.checked = autoEnabled;
+      setSaveStatus(autoEnabled ? "Tự động lưu đang bật" : "Chưa bật tự động lưu", autoEnabled ? "ok" : "");
+      autosaveToggle.addEventListener("change", function () {
+        autoEnabled = autosaveToggle.checked;
+        window.localStorage.setItem("blog-admin-autosave", autoEnabled ? "1" : "0");
+        if (autoEnabled) {
+          setSaveStatus("Tự động lưu đang bật", "ok");
+          scheduleSave(0);
+        } else {
+          window.clearTimeout(saveTimer);
+          setSaveStatus(version > savedVersion ? "Có thay đổi chưa lưu" : "Đã lưu", version > savedVersion ? "dirty" : "ok");
+        }
+      });
+    }
+
+    function scheduleSave(delay) {
+      if (!autoEnabled) {
+        setSaveStatus("Có thay đổi chưa lưu", "dirty");
+        return;
+      }
+      window.clearTimeout(saveTimer);
+      setSaveStatus("Đang chờ lưu...", "pending");
+      saveTimer = window.setTimeout(function () {
+        saveNow(false);
+      }, delay === undefined ? 1200 : delay);
+    }
+
+    function saveNow(manual) {
+      if (!form || !autosaveUrl) return;
+      if (saving) {
+        saveAgain = true;
+        return;
+      }
+      if (!manual && version === savedVersion) {
+        setSaveStatus("Đã lưu", "ok");
+        return;
+      }
+
+      var targetVersion = version;
+      saving = true;
+      setSaveStatus("Đang lưu...", "pending");
+
+      fetch(autosaveUrl, { method: "POST", body: new FormData(form) })
+        .then(function (response) {
+          return response.json().then(function (body) {
+            if (!response.ok) {
+              throw new Error(body.detail || "Lưu thất bại.");
+            }
+            return body;
+          });
+        })
+        .then(function (body) {
+          savedVersion = Math.max(savedVersion, targetVersion);
+          if (body.filename && body.filename !== currentFilename) {
+            setSaveStatus("Đã đổi tên file, đang tải lại...", "ok");
+            window.location.href = "/posts/" + encodeURIComponent(body.filename) + "/edit";
+            return;
+          }
+          updatePreviewUrls(body.preview_url);
+          if (version === savedVersion) {
+            setSaveStatus("Đã lưu " + (body.saved_at || ""), "ok");
+          } else {
+            setSaveStatus("Có thay đổi mới chưa lưu", "dirty");
+          }
+          reloadPreview(900);
+        })
+        .catch(function (error) {
+          setSaveStatus(error.message || "Lưu thất bại.", "error");
+        })
+        .finally(function () {
+          saving = false;
+          if (saveAgain) {
+            saveAgain = false;
+            saveNow(false);
+          }
+        });
+    }
+
+    if (form) {
+      form.addEventListener("input", function (event) {
+        if (event.target === autosaveToggle) return;
+        version += 1;
+        scheduleSave();
+      });
+      form.addEventListener("change", function (event) {
+        if (event.target === autosaveToggle) return;
+        version += 1;
+        scheduleSave();
+      });
+    }
+
+    if (saveNowButton) {
+      saveNowButton.addEventListener("click", function () {
+        saveNow(true);
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        saveNow(true);
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveNow(true);
+      }
+    });
+  })();
+</script>
+{% endblock %}

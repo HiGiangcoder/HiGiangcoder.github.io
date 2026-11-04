@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Bài viết · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bài viết</h1>
+    <p class="muted">{{ posts|length }} bài · {{ repo_dir }}</p>
+  </div>
+  <a class="btn primary" href="/posts/new">+ Viết bài mới</a>
+</div>
+
+{% if posts %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Tiêu đề</th>
+      <th>Ngày</th>
+      <th>Chủ đề</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for post in posts %}
+    <tr>
+      <td>
+        <strong>{{ post.title }}</strong>
+        {% if post.description %}<div class="muted small">{{ post.description }}</div>{% endif %}
+      </td>
+      <td class="nowrap">{{ post.date }}</td>
+      <td><span class="pill">{{ post.topic }}</span></td>
+      <td class="actions">
+        <a class="btn" href="/posts/{{ post.filename }}/edit">Sửa</a>
+        <form method="post" action="/posts/{{ post.filename }}/delete" onsubmit="return confirm('Xóa bài viết này?');">
+          <button class="btn danger" type="submit">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Chưa có bài viết. Bấm “Viết bài mới” để bắt đầu.</p>
+{% endif %}
+
+<section class="panel">
+  <h2>Đăng lên GitHub</h2>
+  <p class="muted">Chọn các file cần commit, hoặc commit toàn bộ thay đổi.</p>
+  {% include "publish_panel.html" %}
+</section>
+{% endblock %}

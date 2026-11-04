@@ -153,7 +153,7 @@ input {
 }
 
 .wrap--narrow {
-  max-width: 760px;
+  max-width: var(--read-width, 760px);
 }
 
 .site-main {
@@ -510,6 +510,7 @@ input {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-soft);
+  min-height: var(--post-card-min-height, 220px);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Blog Admin{% endblock %}</title>
+  <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">Ghi chép của Giang · Admin</a>
+    <nav>
+      <a href="/">Bài viết</a>
+      <a href="/topics">Chủ đề</a>
+      <a href="/pages">Trang</a>
+      <a href="/settings">Cài đặt</a>
+      <a href="/publish">Publish</a>
+      <a href="{{ preview_url }}" target="_blank" rel="noopener">Xem site ↗</a>
+    </nav>
+  </header>
+
+  <main class="wrap {% block main_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

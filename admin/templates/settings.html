@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Cài đặt · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Cài đặt</h1>
+    <p class="muted">Hai nhóm thiết lập: giao diện quản trị và hiển thị blog.</p>
+  </div>
+  <a class="btn" href="/">← Danh sách bài</a>
+</div>
+
+<form class="panel stack" method="post" action="/settings">
+  <section class="settings-section">
+    <h2>Chỉnh admin</h2>
+    <p class="muted small">Các thiết lập cho giao diện viết bài và xem trước.</p>
+
+    <label>
+      <span>Tỷ lệ Width cột xem trước / nội dung Markdown</span>
+      <select name="preview_ratio" required>
+        {% for ratio in ["1:4", "1:3", "1:2", "2:3", "1:1", "3:2", "2:1", "3:1", "4:1"] %}
+          <option value="{{ ratio }}" {% if ratio == (site_data.preview_ratio or '1:2') %}selected{% endif %}>
+            {{ ratio }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <div class="grid-2">
+      <label>
+        <span>Height ô nội dung Markdown (px)</span>
+        <input type="number" name="admin_editor_height" min="300" max="1200" value="{{ site_data.admin.editor_height or 560 }}" required>
+      </label>
+      <label>
+        <span>Height khung xem trước (px)</span>
+        <input type="number" name="admin_preview_height" min="400" max="1400" value="{{ site_data.admin.preview_height or 900 }}" required>
+      </label>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Chỉnh page</h2>
+    <p class="muted small">Các thiết lập cho trang blog công khai.</p>
+
+    <label>
+      <span>Số bài viết hiển thị trên trang chủ</span>
+      <input type="number" name="home_posts" min="1" max="50" value="{{ site_data.page.home_posts or site_data.home_posts or 6 }}" required>
+    </label>
+
+    <div class="grid-2">
+      <label>
+        <span>Số cột bài viết trên trang chủ</span>
+        <input type="number" name="page_post_grid_columns" min="2" max="4" value="{{ site_data.page.post_grid_columns or 3 }}" required>
+      </label>
+      <label>
+        <span>Height tối thiểu thẻ bài viết (px)</span>
+        <input type="number" name="page_post_card_min_height" min="120" max="420" value="{{ site_data.page.post_card_min_height or 220 }}" required>
+      </label>
+    </div>
+
+    <label>
+      <span>Width nội dung bài viết khi đọc (px)</span>
+      <input type="number" name="page_post_content_width" min="600" max="960" value="{{ site_data.page.post_content_width or 760 }}" required>
+    </label>
+  </section>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">Lưu cài đặt</button>
+  </div>
+</form>
+
+<p class="muted small">Giá trị được lưu trong <code>_data/site.yml</code>.</p>
+{% endblock %}

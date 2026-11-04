@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Sửa chủ đề {{ topic.name }} · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ topic.name }}</h1>
+    <p class="muted">Slug: <code>{{ topic.slug }}</code></p>
+  </div>
+  <a class="btn" href="/topics">← Danh sách chủ đề</a>
+</div>
+
+<form class="editor" method="post" action="/topics/{{ topic.slug }}/edit">
+  <div class="grid-2">
+    <label>
+      <span>Tên chủ đề</span>
+      <input type="text" name="name" value="{{ topic.name }}" required>
+    </label>
+    <label>
+      <span>Màu (hex)</span>
+      <input type="color" name="color" value="{{ topic.color or '#6f6a5f' }}">
+    </label>
+  </div>
+
+  <label>
+    <span>Mô tả ngắn</span>
+    <input type="text" name="description" value="{{ topic.description }}">
+  </label>
+
+  <label>
+    <span>Nội dung Markdown của trang chủ đề</span>
+    <textarea name="content" rows="20" spellcheck="false">{{ content }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">Lưu chủ đề</button>
+    <a class="btn" href="{{ preview_url }}" target="_blank" rel="noopener">Xem site ↗</a>
+  </div>
+</form>
+{% endblock %}

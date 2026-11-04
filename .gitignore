@@ -17,3 +17,8 @@ Thumbs.db
 
 # Obsidian
 .obsidian/
+
+# Admin app
+admin/.venv/
+admin/__pycache__/
+admin/*.pyc

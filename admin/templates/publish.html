@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Kết quả publish · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Kết quả publish</h1>
+  <a class="btn" href="/">← Về trang chủ</a>
+</div>
+<pre class="output">{{ outputs }}</pre>
+<p class="muted">Nếu push thất bại, kiểm tra SSH key/PAT đã mount vào container và quyền truy cập repo.</p>
+{% endblock %}

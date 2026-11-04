@@ -5,6 +5,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+<style>
+  :root {
+    --post-grid-columns: {{ site.data.site.page.post_grid_columns | default: 3 }};
+    --post-card-min-height: {{ site.data.site.page.post_card_min_height | default: 220 }}px;
+    --read-width: {{ site.data.site.page.post_content_width | default: 760 }}px;
+  }
+</style>
 <link rel="icon" href="{{ '/assets/images/favicon.svg' | relative_url }}" type="image/svg+xml">
 <link rel="alternate" type="application/atom+xml" title="{{ site.title }}" href="{{ '/feed.xml' | relative_url }}">
 <script>

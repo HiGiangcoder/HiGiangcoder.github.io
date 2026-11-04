@@ -1,0 +1,58 @@
+{% if files %}
+<form class="panel stack" method="post" action="/publish">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:2.5rem">
+            <input type="checkbox" id="check-all" aria-label="Chọn tất cả">
+          </th>
+          <th>Trạng thái</th>
+          <th>File</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+        <tr>
+          <td><input class="file-check" type="checkbox" name="files" value="{{ file.path }}"></td>
+          <td><code>{{ file.status }}</code></td>
+          <td><code>{{ file.path }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <label>
+    <span>Commit message</span>
+    <input type="text" name="message" value="Cập nhật blog" required>
+  </label>
+
+  <label class="checkline">
+    <input type="checkbox" name="commit_all" value="1">
+    <span>Commit toàn bộ thay đổi (bỏ qua lựa chọn file ở trên)</span>
+  </label>
+
+  <p class="muted small">
+    Chỉ các file được tick sẽ được đưa vào commit. File không tick sẽ không được commit.
+  </p>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">Commit &amp; Push</button>
+    <a class="btn" href="/publish">Xem chi tiết →</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var all = document.getElementById("check-all");
+    var boxes = Array.prototype.slice.call(document.querySelectorAll(".file-check"));
+    if (!all) return;
+    all.addEventListener("change", function () {
+      boxes.forEach(function (box) { box.checked = all.checked; });
+    });
+  })();
+</script>
+{% else %}
+<p class="empty">Không có thay đổi nào để commit.</p>
+{% endif %}

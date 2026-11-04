@@ -1,0 +1,33 @@
+services:
+  jekyll:
+    image: ruby:3.2
+    working_dir: /site
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - .:/site
+      - bundle:/usr/local/bundle
+    command: >
+      sh -c "bundle config set path /usr/local/bundle &&
+             bundle install &&
+             bundle exec jekyll serve --host 0.0.0.0 --livereload"
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      REPO_DIR: /site
+      PREVIEW_URL: http://localhost:4000
+      GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME:-Blog Admin}
+      GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL:-blog-admin@example.com}
+    volumes:
+      - .:/site
+      - ~/.ssh:/host-ssh:ro
+    depends_on:
+      - jekyll
+
+volumes:
+  bundle:

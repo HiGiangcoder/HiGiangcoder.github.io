@@ -27,8 +27,8 @@ layout: default
     <a class="section-link" href="{{ '/bai-viet/' | relative_url }}">Tất cả bài viết <span aria-hidden="true">→</span></a>
   </div>
 
-  <div class="post-grid">
-    {% assign home_posts = site.data.site.home_posts | default: 6 %}
+  <div class="post-grid" style="grid-template-columns: repeat({{ site.data.site.page.post_grid_columns | default: 3 }}, minmax(0, 1fr));">
+    {% assign home_posts = site.data.site.page.home_posts | default: site.data.site.home_posts | default: 6 %}
     {% for post in site.posts limit: home_posts %}
       {% include post-card.html post=post featured=forloop.first %}
     {% endfor %}

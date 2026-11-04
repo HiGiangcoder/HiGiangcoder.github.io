@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Chủ đề · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Chủ đề</h1>
+    <p class="muted">{{ topics|length }} chủ đề trong <code>_data/topics.yml</code></p>
+  </div>
+  <a class="btn" href="/">← Danh sách bài</a>
+</div>
+
+{% if topics %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Tên</th>
+      <th>Slug</th>
+      <th>Màu</th>
+      <th>Mô tả</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for topic in topics %}
+    <tr>
+      <td><strong>{{ topic.name }}</strong></td>
+      <td><code>{{ topic.slug }}</code></td>
+      <td><span class="swatch" style="background: {{ topic.color }}"></span> {{ topic.color }}</td>
+      <td class="muted small">{{ topic.description }}</td>
+      <td class="actions">
+        <a class="btn" href="/topics/{{ topic.slug }}/edit">Sửa</a>
+        <form method="post" action="/topics/{{ topic.slug }}/delete" onsubmit="return confirm('Xóa chủ đề này? Các bài viết thuộc chủ đề sẽ không còn trang chủ đề.');">
+          <button class="btn danger" type="submit">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Chưa có chủ đề.</p>
+{% endif %}
+
+<section class="panel">
+  <h2>Thêm chủ đề</h2>
+  <form method="post" action="/topics" class="stack">
+    <div class="grid-2">
+      <label>
+        <span>Tên chủ đề</span>
+        <input type="text" name="name" required>
+      </label>
+      <label>
+        <span>Slug</span>
+        <input type="text" name="slug" placeholder="vi-du: triet-hoc" required>
+      </label>
+    </div>
+    <div class="grid-2">
+      <label>
+        <span>Màu (hex)</span>
+        <input type="color" name="color" value="#6f6a5f">
+      </label>
+      <label>
+        <span>Mô tả</span>
+        <input type="text" name="description">
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn primary" type="submit">Thêm chủ đề</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

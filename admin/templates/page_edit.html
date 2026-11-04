@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sửa {{ label }} · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ label }}</h1>
+    <p class="muted"><code>{{ name }}</code></p>
+  </div>
+  <a class="btn" href="/pages">← Danh sách trang</a>
+</div>
+
+<form class="editor" method="post" action="/pages/{{ name }}/edit">
+  <label>
+    <span>Front matter (YAML)</span>
+    <textarea name="meta_yaml" rows="10" spellcheck="false">{{ meta_yaml }}</textarea>
+  </label>
+
+  <label>
+    <span>Nội dung Markdown</span>
+    <textarea name="content" rows="24" spellcheck="false">{{ content }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">Lưu trang</button>
+    <a class="btn" href="{{ preview_url }}" target="_blank" rel="noopener">Xem site ↗</a>
+  </div>
+</form>
+{% endblock %}

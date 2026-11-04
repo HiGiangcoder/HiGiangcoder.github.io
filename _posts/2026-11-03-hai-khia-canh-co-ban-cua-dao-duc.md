@@ -23,9 +23,11 @@ Nếu bạn đã đọc cuốn *Đạo đức học Aristostle* hay tìm hiểu 
 ## Chủ nghĩa vị nghiêm (Deontology)
 
 
+
 ![image]({{ '/assets/images/bai-viet/2026-11-03-hai-khia-canh-co-ban-cua-dao-duc/image.png' | relative_url }})
-abc
+
 ---
+
 ## Chủ nghĩa hệ quả (Consequentialism)
 ...
 

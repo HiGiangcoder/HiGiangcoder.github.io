@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Trang · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Trang</h1>
+    <p class="muted">Chỉnh sửa front matter và nội dung Markdown của các trang chính.</p>
+  </div>
+  <a class="btn" href="/">← Danh sách bài</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr><th>Trang</th><th>File</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for page in pages %}
+    <tr>
+      <td><strong>{{ page.label }}</strong></td>
+      <td><code>{{ page.name }}</code></td>
+      <td class="actions">
+        {% if page.exists %}
+          <a class="btn" href="/pages/{{ page.name }}/edit">Sửa</a>
+        {% else %}
+          <span class="muted small">Chưa có file</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
