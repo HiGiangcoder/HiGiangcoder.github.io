@@ -1,5 +1,5 @@
 home_posts: 5
-preview_ratio: '1:2'
+preview_ratio: '1:1'
 admin:
   editor_height: 560
   preview_height: 900
