@@ -1,5 +1,7 @@
 # Ghi chép của Giang
 
+English version: [README.en.md](README.en.md)
+
 Blog cá nhân viết bằng **Jekyll**, deploy bằng **GitHub Actions**.  
 Repo này là **monorepo** gồm hai thành phần tách biệt:
 
