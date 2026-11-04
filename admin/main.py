@@ -456,6 +456,8 @@ def new_post(request: Request):
             "content": "",
             "topics": load_topics(),
             "assets": [],
+            "admin_settings": load_site_data().get("admin", {}),
+            "preview_ratio": load_site_data().get("preview_ratio", "1:2"),
             "preview_url": PREVIEW_URL,
         },
     )
