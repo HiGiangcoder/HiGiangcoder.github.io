@@ -144,13 +144,42 @@ bundle exec jekyll serve --drafts
 
 ---
 
+## App quản trị riêng
+
+Giao diện viết/điều khiển blog nằm ở **project riêng**, không nằm trong repo này:
+
+```text
+../blog-admin/
+```
+
+App đó dùng Docker + FastAPI, đọc/ghi trực tiếp vào repo blog qua biến `BLOG_REPO_PATH` (mặc định trỏ về `../HiGiangcoder.github.io`). Repo blog chỉ chứa nội dung Jekyll, không chứa code quản trị.
+
+App hỗ trợ sửa bài, sửa trang/chủ đề, chỉnh số bài ở trang chủ, upload/xóa tài nguyên cho từng bài (ảnh, PDF, video...), copy path/Markdown, dán ảnh trực tiếp từ clipboard, tự động lưu, xem trước bài viết và thanh chèn nhanh Markdown/HTML.
+
+Cách chạy:
+
+```bash
+cd ../blog-admin
+docker compose up --build
+```
+
+Sau đó mở:
+
+- Quản trị: <http://localhost:8000>
+- Xem trước blog: <http://localhost:4000>
+
+Xem hướng dẫn chi tiết trong `../blog-admin/README.md`.
+
+---
+
 ## Cấu trúc thư mục
 
 ```text
 .
 ├── _config.yml          # Tên blog, mô tả, thông tin tác giả, cấu hình chung
 ├── _data/
-│   └── topics.yml       # Bốn chủ đề: tên, slug, màu, mô tả
+│   ├── topics.yml       # Bốn chủ đề: tên, slug, màu, mô tả
+│   └── site.yml         # Cấu hình hiển thị, ví dụ số bài ở trang chủ
 ├── _includes/           # Các mảnh HTML dùng lại (header, footer, thẻ bài viết)
 ├── _layouts/            # Giao diện trang chủ, bài viết, chủ đề, lưu trữ
 ├── _posts/              # ★ NƠI BẠN VIẾT BÀI
@@ -160,7 +189,8 @@ bundle exec jekyll serve --drafts
 ├── assets/
 │   ├── css/style.css    # Toàn bộ giao diện
 │   ├── js/main.js       # Đổi sáng/tối, tìm kiếm, thanh tiến độ đọc
-│   └── images/          # Ảnh: avatar, favicon, ảnh minh họa bài viết
+│   └── images/
+│       └── bai-viet/    # Tài nguyên riêng của từng bài (ảnh, PDF, video...)
 ├── chu-de/              # Trang cho từng chủ đề
 ├── bai-viet.md          # Trang danh sách tất cả bài viết
 ├── gioi-thieu.md        # Trang giới thiệu
@@ -199,16 +229,16 @@ bundle exec jekyll serve --drafts
 Đặt ảnh vào `assets/images/bai-viet/`, ví dụ:
 
 ```text
-assets/images/bai-viet/2026-11-15-anh-minh-hoa.jpg
+assets/images/bai-viet/2026-11-15-anh-minh-hoa/anh-minh-hoa.jpg
 ```
 
 Rồi chèn trong bài:
 
 ```markdown
-![Mô tả ảnh]({{ '/assets/images/bai-viet/2026-11-15-anh-minh-hoa.jpg' | relative_url }})
+![Mô tả ảnh]({{ '/assets/images/bai-viet/2026-11-15-anh-minh-hoa/anh-minh-hoa.jpg' | relative_url }})
 ```
 
-Nên đặt ảnh trong một thư mục riêng cho từng bài để dễ quản lý.
+Mỗi bài có một thư mục riêng, đặt theo tên file bài viết. App quản trị tự tạo thư mục này khi bạn tải tài nguyên lên.
 
 ### Bảng
 

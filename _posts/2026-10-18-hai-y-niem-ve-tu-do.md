@@ -1,9 +1,12 @@
 ---
-title: "Hai ý niệm về tự do"
+title: Hai ý niệm về tự do
 date: 2026-10-18 09:00:00 +0700
 topic: triet-hoc
-description: "Chúng ta dùng chữ “tự do” như thể nó chỉ có một nghĩa. Isaiah Berlin cho thấy có ít nhất hai nghĩa rất khác nhau — và chúng thường kéo ta về hai hướng đối lập."
-tags: [tự do, Isaiah Berlin, triết học chính trị]
+description: Chúng ta dùng chữ “tự do” như thể nó chỉ có một nghĩa. Isaiah Berlin cho thấy có ít nhất hai nghĩa rất khác nhau - và chúng thường kéo ta về hai hướng đối lập.
+tags:
+  - tu-do
+  - isaiah-berlin
+  - triet-hoc-chinh-tri
 ---
 
 Có một câu hỏi tưởng như đơn giản: **tự do là gì?**

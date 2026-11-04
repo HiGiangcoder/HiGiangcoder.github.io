@@ -28,7 +28,8 @@ layout: default
   </div>
 
   <div class="post-grid">
-    {% for post in site.posts limit: 6 %}
+    {% assign home_posts = site.data.site.home_posts | default: 6 %}
+    {% for post in site.posts limit: home_posts %}
       {% include post-card.html post=post featured=forloop.first %}
     {% endfor %}
   </div>
