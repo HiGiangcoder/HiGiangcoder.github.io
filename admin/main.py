@@ -16,13 +16,15 @@ import os
 import re
 import shutil
 import subprocess
+import time
 import unicodedata
+import uuid
 from datetime import date, datetime
 from pathlib import Path
 
 import frontmatter
 import yaml
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -36,6 +38,7 @@ TOPICS_FILE = REPO_DIR / "_data" / "topics.yml"
 SITE_DATA_FILE = REPO_DIR / "_data" / "site.yml"
 TOPIC_PAGES_DIR = REPO_DIR / "chu-de"
 PREVIEW_URL = os.environ.get("PREVIEW_URL", "http://localhost:4000")
+PUBLISH_RESULTS: dict[str, str] = {}
 
 EDITABLE_PAGES = {
     "gioi-thieu.md": "Trang giới thiệu",
@@ -419,9 +422,21 @@ def is_tracked(rel_path: str) -> bool:
     return result.returncode == 0
 
 
+def run_git_command(cmd: list[str]) -> subprocess.CompletedProcess:
+    is_push = len(cmd) >= 2 and cmd[0] == "git" and cmd[1] == "push"
+    attempts = 3 if is_push else 1
+    result = None
+    for attempt in range(attempts):
+        result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True)
+        if result.returncode == 0 or attempt == attempts - 1:
+            break
+        time.sleep(5)
+    return result
+
+
 def run_git_publish(message: str, paths: list[str], remove: bool = False) -> str:
-    author_name = os.environ.get("GIT_AUTHOR_NAME", "Blog Admin")
-    author_email = os.environ.get("GIT_AUTHOR_EMAIL", "blog-admin@example.com")
+    author_name = os.environ.get("GIT_AUTHOR_NAME", "Nguyễn Trường Giang")
+    author_email = os.environ.get("GIT_AUTHOR_EMAIL", "HiGiangcoder@users.noreply.github.com")
     commands = []
 
     if remove:
@@ -447,7 +462,7 @@ def run_git_publish(message: str, paths: list[str], remove: bool = False) -> str
 
     outputs = []
     for cmd in commands:
-        result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True)
+        result = run_git_command(cmd)
         outputs.append(f"$ {' '.join(cmd)}\\n{result.stdout}{result.stderr}".strip())
         if result.returncode != 0:
             break
@@ -987,15 +1002,16 @@ def publish_page(request: Request):
     )
 
 
-@app.post("/publish", response_class=HTMLResponse)
+@app.post("/publish")
 def publish(
     request: Request,
     message: str = Form("Cập nhật blog"),
     commit_all: str = Form(""),
     files: list[str] = Form([]),
+    x_requested_with: str | None = Header(default=None),
 ):
-    author_name = os.environ.get("GIT_AUTHOR_NAME", "Blog Admin")
-    author_email = os.environ.get("GIT_AUTHOR_EMAIL", "blog-admin@example.com")
+    author_name = os.environ.get("GIT_AUTHOR_NAME", "Nguyễn Trường Giang")
+    author_email = os.environ.get("GIT_AUTHOR_EMAIL", "HiGiangcoder@users.noreply.github.com")
     commands = []
 
     if commit_all:
@@ -1024,20 +1040,54 @@ def publish(
     )
 
     outputs = []
+    success = True
     for cmd in commands:
-        result = subprocess.run(
-            cmd, cwd=REPO_DIR, capture_output=True, text=True
-        )
+        result = run_git_command(cmd)
         outputs.append(
             f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}".strip()
         )
         if result.returncode != 0:
+            success = False
             break
+
+    joined = "\n\n".join(outputs)
+    result_id = uuid.uuid4().hex
+    PUBLISH_RESULTS[result_id] = joined
+    if len(PUBLISH_RESULTS) > 20:
+        oldest = next(iter(PUBLISH_RESULTS))
+        PUBLISH_RESULTS.pop(oldest, None)
+
+    if x_requested_with == "XMLHttpRequest":
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            {
+                "ok": success,
+                "result_id": result_id,
+                "summary": "Push thành công." if success else "Push thất bại.",
+            }
+        )
+
     return templates.TemplateResponse(
         "publish.html",
         {
             "request": request,
-            "outputs": "\n\n".join(outputs),
+            "outputs": joined,
+            "preview_url": PREVIEW_URL,
+        },
+    )
+
+
+@app.get("/publish/result/{result_id}", response_class=HTMLResponse)
+def publish_result(request: Request, result_id: str):
+    outputs = PUBLISH_RESULTS.get(result_id)
+    if outputs is None:
+        raise HTTPException(404, "Không tìm thấy kết quả publish.")
+    return templates.TemplateResponse(
+        "publish.html",
+        {
+            "request": request,
+            "outputs": outputs,
             "preview_url": PREVIEW_URL,
         },
     )

@@ -468,6 +468,29 @@ input[type="checkbox"] {
 }
 
 .paste-hint { margin: -0.25rem 0 0; }
+
+.spinner {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: -0.12rem;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.publish-result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
 .paste-hint.error { color: var(--danger); }
 
 .asset-panel { margin-top: 1.5rem; }
