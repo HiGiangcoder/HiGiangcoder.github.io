@@ -4,5 +4,7 @@ admin:
   editor_height: 560
   preview_height: 900
 page:
+  home_posts: 5
   post_grid_columns: 3
-  post_card_min_height: 220
+  post_card_min_height: 260
+  post_content_width: 760
