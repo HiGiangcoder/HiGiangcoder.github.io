@@ -344,6 +344,9 @@ Workflow: `.github/workflows/pages.yml`
 
 ---
 
-## Copyright
+## License
 
-© 2026 Nguyễn Trường Giang. All rights reserved.
+This project is licensed under the **MIT License**.  
+See the [LICENSE](LICENSE) file for details.
+
+© 2026 Nguyễn Trường Giang.
