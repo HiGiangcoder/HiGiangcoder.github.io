@@ -12,7 +12,7 @@ tags:
 ## 1. Mô hình thiết kế văn bản
 
 Có thể xem một văn bản là sự phối hợp của bốn lớp:
-
+ 
 ```
 VĂN BẢN
 ├── Mục đích
