@@ -1,5 +1,5 @@
 {% if files %}
-<form class="panel stack" method="post" action="/publish">
+<form class="panel stack" method="post" action="/publish" onsubmit="return handlePublishSubmit(this, event);">
   <div class="table-wrap">
     <table class="table">
       <thead>
@@ -49,62 +49,61 @@
 </form>
 
 <script>
-  (function () {
-    var form = document.querySelector('form[action="/publish"]');
-    if (!form) return;
+  window.handlePublishSubmit = function (form, event) {
+    if (event) event.preventDefault();
+
     var button = document.getElementById("publish-submit");
     var status = document.getElementById("publish-status");
     var detail = document.getElementById("publish-detail-link");
     var resultBox = document.getElementById("publish-result");
 
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-      if (button) {
-        button.disabled = true;
-        button.innerHTML = '<span class="spinner"></span> Đang push...';
-      }
-      if (resultBox) resultBox.hidden = false;
-      if (status) {
-        status.textContent = "Đang commit và push...";
-        status.className = "save-status pending";
-      }
-      if (detail) detail.hidden = true;
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner"></span> Đang push...';
+    }
+    if (resultBox) resultBox.hidden = false;
+    if (status) {
+      status.textContent = "Đang commit và push...";
+      status.className = "save-status pending";
+    }
+    if (detail) detail.hidden = true;
 
-      fetch("/publish", {
-        method: "POST",
-        body: new FormData(form),
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      })
-        .then(function (response) {
-          return response.json().then(function (body) {
-            if (!response.ok) throw new Error(body.detail || "Publish thất bại.");
-            return body;
-          });
-        })
-        .then(function (body) {
-          if (status) {
-            status.textContent = body.summary || (body.ok ? "Push thành công." : "Push thất bại.");
-            status.className = "save-status " + (body.ok ? "ok" : "error");
-          }
-          if (detail && body.result_id) {
-            detail.href = "/publish/result/" + body.result_id;
-            detail.hidden = false;
-          }
-        })
-        .catch(function (error) {
-          if (status) {
-            status.textContent = error.message || "Publish thất bại.";
-            status.className = "save-status error";
-          }
-        })
-        .finally(function () {
-          if (button) {
-            button.disabled = false;
-            button.innerHTML = "Commit &amp; Push";
-          }
+    fetch("/publish", {
+      method: "POST",
+      body: new FormData(form),
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+      .then(function (response) {
+        return response.json().then(function (body) {
+          if (!response.ok) throw new Error(body.detail || "Publish thất bại.");
+          return body;
         });
-    });
-  })();
+      })
+      .then(function (body) {
+        if (status) {
+          status.textContent = body.summary || (body.ok ? "Push thành công." : "Push thất bại.");
+          status.className = "save-status " + (body.ok ? "ok" : "error");
+        }
+        if (detail && body.result_id) {
+          detail.href = "/publish/result/" + body.result_id;
+          detail.hidden = false;
+        }
+      })
+      .catch(function (error) {
+        if (status) {
+          status.textContent = error.message || "Publish thất bại.";
+          status.className = "save-status error";
+        }
+      })
+      .finally(function () {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = "Commit &amp; Push";
+        }
+      });
+
+    return false;
+  };
 </script>
 
 <script>
