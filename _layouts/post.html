@@ -95,3 +95,40 @@ layout: default
     </p>
   </footer>
 </article>
+
+<script>
+  (function () {
+    function scrollToRatio(ratio) {
+      ratio = Math.max(0, Math.min(1, Number(ratio) || 0));
+      var max = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      ) - window.innerHeight;
+      if (max < 0) max = 0;
+      var target = Math.round(max * ratio - window.innerHeight / 2);
+      if (target < 0) target = 0;
+      if (target > max) target = max;
+      window.scrollTo(0, target);
+    }
+
+    function applyAdminScrollFromUrl() {
+      var params = new URLSearchParams(window.location.search);
+      var raw = params.get("admin_scroll");
+      if (raw === null) return;
+      scrollToRatio(raw);
+      window.setTimeout(function () { scrollToRatio(raw); }, 500);
+      window.setTimeout(function () { scrollToRatio(raw); }, 1500);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", applyAdminScrollFromUrl);
+    } else {
+      applyAdminScrollFromUrl();
+    }
+
+    window.addEventListener("message", function (event) {
+      if (!event.data || event.data.type !== "admin-scroll") return;
+      scrollToRatio(event.data.ratio);
+    });
+  })();
+</script>
