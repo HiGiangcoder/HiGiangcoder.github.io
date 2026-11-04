@@ -1,6 +1,7 @@
 # Ghi chép của Giang
 
-English version: [README.en.md](README.en.md)
+[![Tiếng Việt](https://img.shields.io/badge/lang-Tiếng%20Việt-red)](README.md)
+[![English](https://img.shields.io/badge/lang-English-blue)](README.en.md)
 
 Blog cá nhân viết bằng **Jekyll**, deploy bằng **GitHub Actions**.  
 Repo này là **monorepo** gồm hai thành phần tách biệt:
@@ -340,3 +341,9 @@ Workflow: `.github/workflows/pages.yml`
 - `admin/.venv/`, `__pycache__/` bị ignore.
 - Jekyll loại trừ `admin/` khỏi build.
 - Cài đặt admin được lưu trong `_data/site.yml`, nên có thể commit cùng blog.
+
+---
+
+## Copyright
+
+© 2026 Nguyễn Trường Giang. All rights reserved.
