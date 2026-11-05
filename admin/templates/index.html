@@ -70,6 +70,18 @@
 </div>
 
 <div class="list-toolbar">
+  <div class="post-tabs" role="group" aria-label="Lọc bài viết">
+    <button type="button" class="post-tab active" data-post-filter="all" aria-pressed="true">
+      Tất cả <span class="pill" data-tab-count="all">{{ posts|length }}</span>
+    </button>
+    <button type="button" class="post-tab" data-post-filter="managed" aria-pressed="false">
+      Đang quản lý <span class="pill" data-tab-count="managed">{{ managed_posts|length }}</span>
+    </button>
+    <button type="button" class="post-tab" data-post-filter="archived" aria-pressed="false">
+      Lưu trữ <span class="pill" data-tab-count="archived">{{ archived_posts|length }}</span>
+    </button>
+  </div>
+
   <input
     type="search"
     id="post-search"
@@ -112,17 +124,37 @@
 <script>
   (function () {
     var input = document.getElementById("post-search");
-    var rows = function () {
-      return Array.prototype.slice.call(document.querySelectorAll("[data-post-row]"));
-    };
     var count = document.getElementById("post-search-count");
     var empty = document.getElementById("post-search-empty");
+    var tabs = Array.prototype.slice.call(
+      document.querySelectorAll("[data-post-filter]")
+    );
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll(".post-section")
+    );
+    var activeFilter = "all";
+
+    function sectionKind(section) {
+      return section.hasAttribute("data-managed-section") ? "managed" : "archived";
+    }
+
+    function isAllowed(section) {
+      return activeFilter === "all" || sectionKind(section) === activeFilter;
+    }
+
+    function setTabCount(kind, value) {
+      var target = document.querySelector('[data-tab-count="' + kind + '"]');
+      if (target) target.textContent = value;
+    }
 
     function syncSections() {
-      ["data-managed-section", "data-archived-section"].forEach(function (attr) {
-        var section = document.querySelector("[" + attr + "]");
-        if (!section) return;
+      var totals = { managed: 0, archived: 0 };
+
+      sections.forEach(function (section) {
+        var kind = sectionKind(section);
         var total = section.querySelectorAll("[data-post-row]").length;
+        totals[kind] = total;
+
         var counter = section.querySelector("[data-count]");
         var table = section.querySelector("table");
         var sectionEmpty = section.querySelector("[data-section-empty]");
@@ -130,37 +162,62 @@
         if (table) table.hidden = total === 0;
         if (sectionEmpty) sectionEmpty.hidden = total !== 0;
       });
+
+      setTabCount("all", totals.managed + totals.archived);
+      setTabCount("managed", totals.managed);
+      setTabCount("archived", totals.archived);
     }
 
     function applyFilter() {
-      if (!input) return;
-      var query = input.value.trim().toLowerCase();
+      var query = input ? input.value.trim().toLowerCase() : "";
       var visible = 0;
 
-      rows().forEach(function (row) {
-        var match = !query || (row.dataset.search || "").indexOf(query) !== -1;
-        row.hidden = !match;
-        if (match) visible += 1;
-      });
+      sections.forEach(function (section) {
+        var sectionAllowed = isAllowed(section);
+        var matching = 0;
 
-      document.querySelectorAll(".post-section").forEach(function (section) {
-        var hasVisible = section.querySelector("[data-post-row]:not([hidden])");
-        section.hidden = !!query && !hasVisible;
+        section.querySelectorAll("[data-post-row]").forEach(function (row) {
+          var match = !query || (row.dataset.search || "").indexOf(query) !== -1;
+          row.hidden = !match;
+          if (match) matching += 1;
+        });
+
+        section.hidden = !sectionAllowed || (!!query && matching === 0);
+        if (sectionAllowed) visible += matching;
       });
 
       if (count) count.textContent = query ? visible + " kết quả" : "";
       if (empty) empty.hidden = !(query && visible === 0);
     }
 
+    function selectTab(tab) {
+      activeFilter = tab.dataset.postFilter;
+      tabs.forEach(function (item) {
+        var active = item === tab;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      applyFilter();
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        selectTab(tab);
+      });
+    });
+
     if (input) {
       input.addEventListener("input", applyFilter);
       input.addEventListener("search", applyFilter);
     }
+
     document.addEventListener("git-state-changed", function () {
       syncSections();
       applyFilter();
     });
+
     syncSections();
+    applyFilter();
   })();
 </script>
 {% endblock %}
