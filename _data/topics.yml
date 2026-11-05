@@ -7,11 +7,10 @@
   color: '#00ffe1'
   description: 'Cách tâm trí vận hành: cảm xúc, thói quen, động lực và các mối quan
     hệ.'
-- slug: xa-hoi
-  name: Xã hội
-  color: '#fbff00'
-  description: 'Cá nhân trong tập thể: bản sắc, quyền lực, mạng xã hội và đời sống
-    chung.'
+- slug: ki-thuat
+  name: Kĩ thuật
+  color: '#08007a'
+  description: 'Các chủ đề liên quan đến kĩ thuật như: AI, ML, Godot, ...'
 - slug: khac
   name: Khác
   color: '#6f6a5f'
