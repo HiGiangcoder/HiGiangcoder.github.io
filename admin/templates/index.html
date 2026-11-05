@@ -87,13 +87,13 @@
 
 <div class="list-toolbar">
   <div class="post-tabs" role="group" aria-label="Lọc bài viết">
-    <button type="button" class="post-tab" data-post-filter="editing" aria-pressed="false">
+    <button type="button" class="post-tab active" data-post-filter="editing" aria-pressed="true">
       Đang chỉnh sửa <span class="pill" data-tab-count="editing">{{ editing_posts|length }}</span>
     </button>
     <button type="button" class="post-tab" data-post-filter="archived" aria-pressed="false">
       Lưu trữ <span class="pill" data-tab-count="archived">{{ archived_posts|length }}</span>
     </button>
-    <button type="button" class="post-tab active" data-post-filter="all" aria-pressed="true">
+    <button type="button" class="post-tab" data-post-filter="all" aria-pressed="false">
       Tất cả <span class="pill" data-tab-count="all">{{ posts|length }}</span>
     </button>
   </div>
@@ -118,7 +118,7 @@
   </p>
 </section>
 
-<section class="post-section" data-archived-section>
+<section class="post-section" data-archived-section hidden>
   <div class="section-head">
     <h2>Lưu trữ <span class="pill" data-count>{{ archived_posts|length }}</span></h2>
     <p class="muted small">Những bài đã hoàn thành và được cất vào kho lưu trữ.</p>
@@ -148,7 +148,7 @@
     var sections = Array.prototype.slice.call(
       document.querySelectorAll(".post-section")
     );
-    var activeFilter = "all";
+    var activeFilter = "editing";
 
     function sectionKind(section) {
       return section.hasAttribute("data-editing-section") ? "editing" : "archived";
