@@ -15,12 +15,15 @@
       <a href="/pages">Trang</a>
       <a href="/settings">Cài đặt</a>
       <a href="/publish">Publish</a>
-      <a href="{{ preview_url }}" target="_blank" rel="noopener">Xem site ↗</a>
+      <a href="{{ preview_url }}" target="_blank" rel="noopener">Local ↗</a>
+      <a href="{{ site_url }}" target="_blank" rel="noopener">GitHub Pages ↗</a>
     </nav>
   </header>
 
   <main class="wrap {% block main_class %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+
+  <script src="/static/git-actions.js" defer></script>
 </body>
 </html>

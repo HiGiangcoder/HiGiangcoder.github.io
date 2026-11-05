@@ -125,19 +125,37 @@
     </form>
 
     {% if mode == 'edit' %}
-    <section class="panel">
+    <section class="panel stack" data-git-scope>
       <h2>Trạng thái GitHub</h2>
-      {% if tracked %}
-        <p class="muted small">Bài này đang được đăng trên GitHub. Bạn có thể gỡ nó khỏi GitHub nhưng vẫn giữ file trên máy.</p>
-        <form method="post" action="/posts/{{ filename|urlencode }}/unpublish">
+      <p class="muted small" data-git-description>
+        {% if tracked %}
+          Bài này đang được đăng trên GitHub. Bạn có thể gỡ nó khỏi GitHub nhưng vẫn giữ file trên máy.
+        {% else %}
+          Bài này chưa được đăng trên GitHub hoặc đã bị gỡ. Bạn có thể đăng lại.
+        {% endif %}
+      </p>
+      <div class="git-actions">
+        <form
+          class="js-git-action"
+          data-git-state="tracked"
+          method="post"
+          action="/posts/{{ filename|urlencode }}/unpublish"
+          {% if not tracked %}hidden{% endif %}
+        >
           <button class="btn" type="submit">Gỡ khỏi GitHub</button>
         </form>
-      {% else %}
-        <p class="muted small">Bài này chưa được đăng trên GitHub hoặc đã bị gỡ. Bạn có thể đăng lại.</p>
-        <form method="post" action="/posts/{{ filename|urlencode }}/republish">
+        <form
+          class="js-git-action"
+          data-git-state="untracked"
+          method="post"
+          action="/posts/{{ filename|urlencode }}/republish"
+          {% if tracked %}hidden{% endif %}
+        >
           <button class="btn primary" type="submit">Đăng lại lên GitHub</button>
         </form>
-      {% endif %}
+        <span class="save-status" data-git-status></span>
+        <a class="detail-link" data-git-publish-link href="/publish" hidden>Xem trong Publish →</a>
+      </div>
     </section>
     {% endif %}
   </div>

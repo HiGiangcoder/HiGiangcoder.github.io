@@ -1,16 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Bài viết · Blog Admin{% endblock %}
-{% block content %}
-<div class="page-head">
-  <div>
-    <h1>Bài viết</h1>
-    <p class="muted">{{ posts|length }} bài · {{ repo_dir }}</p>
-  </div>
-  <a class="btn primary" href="/posts/new">+ Viết bài mới</a>
-</div>
 
-{% if posts %}
-<table class="table">
+{% macro post_table(items) %}
+<table class="table post-table" {% if not items %}hidden{% endif %}>
   <thead>
     <tr>
       <th>Tiêu đề</th>
@@ -20,31 +12,45 @@
     </tr>
   </thead>
   <tbody>
-    {% for post in posts %}
-    <tr>
+    {% for post in items %}
+    <tr
+      data-post-row
+      data-git-scope
+      data-search="{{ (post.title ~ ' ' ~ post.filename ~ ' ' ~ post.topic ~ ' ' ~ (post.description or ''))|lower }}"
+    >
       <td>
         <strong>{{ post.title }}</strong>
-        {% if post.tracked %}
-          <span class="pill">Đã đăng GitHub</span>
-        {% else %}
-          <span class="pill">Chưa đăng GitHub</span>
-        {% endif %}
+        <span
+          class="pill {% if post.tracked %}pill-ok{% else %}pill-warn{% endif %}"
+          data-git-pill
+        >{% if post.tracked %}Đã đăng GitHub{% else %}Chưa đăng GitHub{% endif %}</span>
+        <span class="save-status" data-git-status></span>
+        <a class="detail-link" data-git-publish-link href="/publish" hidden>Xem trong Publish →</a>
         {% if post.description %}<div class="muted small">{{ post.description }}</div>{% endif %}
       </td>
       <td class="nowrap">{{ post.date }}</td>
       <td><span class="pill">{{ post.topic }}</span></td>
       <td class="actions">
         <a class="btn" href="/posts/{{ post.filename }}/edit">Sửa</a>
-        {% if post.tracked %}
-          <form method="post" action="/posts/{{ post.filename }}/unpublish">
-            <button class="btn" type="submit" title="Gỡ bài khỏi GitHub nhưng vẫn giữ file local">Gỡ GitHub</button>
-          </form>
-        {% else %}
-          <form method="post" action="/posts/{{ post.filename }}/republish">
-            <button class="btn primary" type="submit" title="Đăng lại bài lên GitHub">Đăng lại</button>
-          </form>
-        {% endif %}
-        <form method="post" action="/posts/{{ post.filename }}/delete" onsubmit="return confirm('Xóa bài viết này trên máy local?');">
+        <form
+          class="js-git-action"
+          data-git-state="tracked"
+          method="post"
+          action="/posts/{{ post.filename|urlencode }}/unpublish"
+          {% if not post.tracked %}hidden{% endif %}
+        >
+          <button class="btn" type="submit" title="Gỡ bài khỏi GitHub nhưng vẫn giữ file local">Gỡ GitHub</button>
+        </form>
+        <form
+          class="js-git-action"
+          data-git-state="untracked"
+          method="post"
+          action="/posts/{{ post.filename|urlencode }}/republish"
+          {% if post.tracked %}hidden{% endif %}
+        >
+          <button class="btn primary" type="submit" title="Đăng lại bài lên GitHub">Đăng lại</button>
+        </form>
+        <form method="post" action="/posts/{{ post.filename|urlencode }}/delete" onsubmit="return confirm('Xóa bài viết này trên máy local?');">
           <button class="btn danger" type="submit">Xóa local</button>
         </form>
       </td>
@@ -52,13 +58,109 @@
     {% endfor %}
   </tbody>
 </table>
-{% else %}
-<p class="empty">Chưa có bài viết. Bấm “Viết bài mới” để bắt đầu.</p>
-{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bài viết</h1>
+    <p class="muted">{{ posts|length }} bài · {{ repo_dir }}</p>
+  </div>
+  <a class="btn primary" href="/posts/new">+ Viết bài mới</a>
+</div>
+
+<div class="list-toolbar">
+  <input
+    type="search"
+    id="post-search"
+    placeholder="Tìm theo tiêu đề, chủ đề, mô tả…"
+    aria-label="Tìm bài viết"
+  >
+  <span class="muted small" id="post-search-count"></span>
+</div>
+
+<section class="post-section" data-managed-section>
+  <div class="section-head">
+    <h2>Đang quản lý <span class="pill" data-count>{{ managed_posts|length }}</span></h2>
+    <p class="muted small">Các bài đang được đăng trên GitHub.</p>
+  </div>
+  {{ post_table(managed_posts) }}
+  <p class="empty" data-section-empty {% if managed_posts %}hidden{% endif %}>
+    Chưa có bài nào đang quản lý.
+  </p>
+</section>
+
+<section class="post-section" data-archived-section>
+  <div class="section-head">
+    <h2>Lưu trữ <span class="pill" data-count>{{ archived_posts|length }}</span></h2>
+    <p class="muted small">Bài đã gỡ khỏi GitHub nhưng vẫn còn file trên máy. Có thể đăng lại bất cứ lúc nào.</p>
+  </div>
+  {{ post_table(archived_posts) }}
+  <p class="empty" data-section-empty {% if archived_posts %}hidden{% endif %}>
+    Không có bài nào trong kho lưu trữ.
+  </p>
+</section>
+
+<p class="empty" id="post-search-empty" hidden>Không tìm thấy bài viết phù hợp.</p>
 
 <section class="panel">
   <h2>Đăng lên GitHub</h2>
   <p class="muted">Chọn các file cần commit, hoặc commit toàn bộ thay đổi.</p>
   {% include "publish_panel.html" %}
 </section>
+
+<script>
+  (function () {
+    var input = document.getElementById("post-search");
+    var rows = function () {
+      return Array.prototype.slice.call(document.querySelectorAll("[data-post-row]"));
+    };
+    var count = document.getElementById("post-search-count");
+    var empty = document.getElementById("post-search-empty");
+
+    function syncSections() {
+      ["data-managed-section", "data-archived-section"].forEach(function (attr) {
+        var section = document.querySelector("[" + attr + "]");
+        if (!section) return;
+        var total = section.querySelectorAll("[data-post-row]").length;
+        var counter = section.querySelector("[data-count]");
+        var table = section.querySelector("table");
+        var sectionEmpty = section.querySelector("[data-section-empty]");
+        if (counter) counter.textContent = total;
+        if (table) table.hidden = total === 0;
+        if (sectionEmpty) sectionEmpty.hidden = total !== 0;
+      });
+    }
+
+    function applyFilter() {
+      if (!input) return;
+      var query = input.value.trim().toLowerCase();
+      var visible = 0;
+
+      rows().forEach(function (row) {
+        var match = !query || (row.dataset.search || "").indexOf(query) !== -1;
+        row.hidden = !match;
+        if (match) visible += 1;
+      });
+
+      document.querySelectorAll(".post-section").forEach(function (section) {
+        var hasVisible = section.querySelector("[data-post-row]:not([hidden])");
+        section.hidden = !!query && !hasVisible;
+      });
+
+      if (count) count.textContent = query ? visible + " kết quả" : "";
+      if (empty) empty.hidden = !(query && visible === 0);
+    }
+
+    if (input) {
+      input.addEventListener("input", applyFilter);
+      input.addEventListener("search", applyFilter);
+    }
+    document.addEventListener("git-state-changed", function () {
+      syncSections();
+      applyFilter();
+    });
+    syncSections();
+  })();
+</script>
 {% endblock %}

@@ -10,4 +10,78 @@
 </div>
 
 {% include "publish_panel.html" %}
+
+<section class="panel stack">
+  <h2>Lịch sử publish</h2>
+  <p class="muted small">Nhấn “Xem chi tiết” để xem log của từng lần commit &amp; push.</p>
+
+  {% if publish_results %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Thời gian</th>
+          <th>Nội dung</th>
+          <th>Kết quả</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in publish_results %}
+        <tr>
+          <td class="nowrap muted">{{ result.time }}</td>
+          <td>{{ result.title }}</td>
+          <td>
+            {% if result.ok %}
+              <span class="pill pill-ok">Thành công</span>
+            {% else %}
+              <span class="pill pill-warn">Thất bại</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            <a class="btn" href="/publish/result/{{ result.id }}">Xem chi tiết</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Chưa có lần publish nào trong phiên này.</p>
+  {% endif %}
+</section>
+
+<section class="panel stack">
+  <h2>Commit gần đây</h2>
+  {% if recent_commits %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Hash</th>
+          <th>Nội dung</th>
+          <th>Thời gian</th>
+          <th>Tác giả</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for commit in recent_commits %}
+        <tr>
+          <td><code>{{ commit.hash }}</code></td>
+          <td>{{ commit.subject }}</td>
+          <td class="nowrap muted">{{ commit.date }}</td>
+          <td class="muted">{{ commit.author }}</td>
+          <td class="actions">
+            <a class="btn" href="/publish/commit/{{ commit.hash }}">Xem chi tiết</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Không đọc được lịch sử commit.</p>
+  {% endif %}
+</section>
 {% endblock %}

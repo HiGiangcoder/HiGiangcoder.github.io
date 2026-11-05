@@ -39,12 +39,11 @@
 
   <div class="form-actions">
     <button class="btn primary" type="submit" id="publish-submit">Commit &amp; Push</button>
-    <a class="btn" href="/publish">Xem chi tiết →</a>
   </div>
 
   <div id="publish-result" class="publish-result" hidden>
     <span id="publish-status" class="save-status"></span>
-    <a id="publish-detail-link" class="btn" href="#" target="_blank" rel="noopener" hidden>Xem chi tiết commit →</a>
+    <a class="detail-link" href="/publish">Xem trong Publish →</a>
   </div>
 </form>
 
@@ -54,7 +53,6 @@
 
     var button = document.getElementById("publish-submit");
     var status = document.getElementById("publish-status");
-    var detail = document.getElementById("publish-detail-link");
     var resultBox = document.getElementById("publish-result");
 
     if (button) {
@@ -66,7 +64,6 @@
       status.textContent = "Đang commit và push...";
       status.className = "save-status pending";
     }
-    if (detail) detail.hidden = true;
 
     fetch("/publish", {
       method: "POST",
@@ -83,10 +80,6 @@
         if (status) {
           status.textContent = body.summary || (body.ok ? "Push thành công." : "Push thất bại.");
           status.className = "save-status " + (body.ok ? "ok" : "error");
-        }
-        if (detail && body.result_id) {
-          detail.href = "/publish/result/" + body.result_id;
-          detail.hidden = false;
         }
       })
       .catch(function (error) {

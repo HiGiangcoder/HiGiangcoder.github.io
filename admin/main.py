@@ -38,7 +38,9 @@ TOPICS_FILE = REPO_DIR / "_data" / "topics.yml"
 SITE_DATA_FILE = REPO_DIR / "_data" / "site.yml"
 TOPIC_PAGES_DIR = REPO_DIR / "chu-de"
 PREVIEW_URL = os.environ.get("PREVIEW_URL", "http://localhost:4000")
-PUBLISH_RESULTS: dict[str, str] = {}
+SITE_URL = os.environ.get("SITE_URL", "https://higiangcoder.github.io")
+# Lịch sử publish (mới nhất ở đầu), mỗi mục: id/title/ok/time/outputs
+PUBLISH_RESULTS: list[dict] = []
 
 EDITABLE_PAGES = {
     "gioi-thieu.md": "Trang giới thiệu",
@@ -61,7 +63,16 @@ app = FastAPI(title="Blog Admin")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 if ASSETS_DIR.exists():
     app.mount("/blog-assets", StaticFiles(directory=ASSETS_DIR), name="blog-assets")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+
+
+def template_context(request: Request) -> dict:
+    return {"preview_url": PREVIEW_URL, "site_url": SITE_URL}
+
+
+templates = Jinja2Templates(
+    directory=BASE_DIR / "templates",
+    context_processors=[template_context],
+)
 
 
 def slugify(value: str) -> str:
@@ -186,6 +197,62 @@ def save_site_data(data: dict) -> None:
         yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
     )
+
+
+def recent_commits(limit: int = 10) -> list[dict]:
+    result = subprocess.run(
+        [
+            "git",
+            "log",
+            f"-n{limit}",
+            "--pretty=format:%h%x1f%s%x1f%ad%x1f%an",
+            "--date=format:%d/%m/%Y %H:%M",
+        ],
+        cwd=REPO_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    items = []
+    for line in result.stdout.splitlines():
+        parts = line.split("\x1f")
+        if len(parts) != 4:
+            continue
+        items.append(
+            {
+                "hash": parts[0],
+                "subject": parts[1],
+                "date": parts[2],
+                "author": parts[3],
+            }
+        )
+    return items
+
+
+def commit_detail(commit_hash: str) -> str | None:
+    if not re.fullmatch(r"[0-9a-fA-F]{4,40}", commit_hash):
+        return None
+    result = subprocess.run(
+        [
+            "git",
+            "show",
+            "--stat",
+            "--patch",
+            "--no-color",
+            "--format=fuller",
+            commit_hash,
+        ],
+        cwd=REPO_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    output = result.stdout
+    if len(output) > 200_000:
+        output = output[:200_000] + "\n\n… (đã rút gọn bớt log)"
+    return output
 
 
 def changed_files() -> list[dict]:
@@ -434,7 +501,25 @@ def run_git_command(cmd: list[str]) -> subprocess.CompletedProcess:
     return result
 
 
-def run_git_publish(message: str, paths: list[str], remove: bool = False) -> str:
+def record_publish_result(title: str, outputs: str, ok: bool) -> str:
+    result_id = uuid.uuid4().hex
+    PUBLISH_RESULTS.insert(
+        0,
+        {
+            "id": result_id,
+            "title": title,
+            "ok": ok,
+            "time": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "outputs": outputs,
+        },
+    )
+    del PUBLISH_RESULTS[20:]
+    return result_id
+
+
+def run_git_publish(
+    message: str, paths: list[str], remove: bool = False
+) -> tuple[str, bool]:
     author_name = os.environ.get("GIT_AUTHOR_NAME", "Nguyễn Trường Giang")
     author_email = os.environ.get("GIT_AUTHOR_EMAIL", "HiGiangcoder@users.noreply.github.com")
     commands = []
@@ -461,12 +546,14 @@ def run_git_publish(message: str, paths: list[str], remove: bool = False) -> str
     )
 
     outputs = []
+    success = True
     for cmd in commands:
         result = run_git_command(cmd)
-        outputs.append(f"$ {' '.join(cmd)}\\n{result.stdout}{result.stderr}".strip())
+        outputs.append(f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}".strip())
         if result.returncode != 0:
+            success = False
             break
-    return "\\n\\n".join(outputs)
+    return "\n\n".join(outputs), success
 
 
 def post_preview_url(filename: str, post_date: str) -> str:
@@ -484,11 +571,14 @@ def post_preview_url(filename: str, post_date: str) -> str:
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    posts = list_posts()
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "posts": list_posts(),
+            "posts": posts,
+            "managed_posts": [p for p in posts if p["tracked"]],
+            "archived_posts": [p for p in posts if not p["tracked"]],
             "topics": load_topics(),
             "changed_files": changed_files(),
             "files": changed_files(),
@@ -749,11 +839,27 @@ def unpublish_post(
     if (REPO_DIR / asset_rel).exists():
         paths.append(asset_rel)
 
-    outputs = run_git_publish(f"Gỡ bài khỏi GitHub: {title}", paths, remove=True)
-    return templates.TemplateResponse(
-        "publish.html",
-        {"request": request, "outputs": outputs, "preview_url": PREVIEW_URL},
-    )
+    title_message = f"Gỡ bài khỏi GitHub: {title}"
+    outputs, ok = run_git_publish(title_message, paths, remove=True)
+    result_id = record_publish_result(title_message, outputs, ok)
+
+    if x_requested_with == "XMLHttpRequest":
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            {
+                "ok": ok,
+                "result_id": result_id,
+                "tracked": False,
+                "summary": (
+                    "Đã gỡ bài khỏi GitHub."
+                    if ok
+                    else "Gỡ bài thất bại."
+                ),
+            }
+        )
+
+    return RedirectResponse(f"/publish/result/{result_id}", status_code=303)
 
 
 @app.post("/posts/{filename}/republish")
@@ -779,11 +885,27 @@ def republish_post(
     if (REPO_DIR / asset_rel).exists():
         paths.append(asset_rel)
 
-    outputs = run_git_publish(f"Đăng lại bài: {title}", paths, remove=False)
-    return templates.TemplateResponse(
-        "publish.html",
-        {"request": request, "outputs": outputs, "preview_url": PREVIEW_URL},
-    )
+    title_message = f"Đăng lại bài: {title}"
+    outputs, ok = run_git_publish(title_message, paths, remove=False)
+    result_id = record_publish_result(title_message, outputs, ok)
+
+    if x_requested_with == "XMLHttpRequest":
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            {
+                "ok": ok,
+                "result_id": result_id,
+                "tracked": True,
+                "summary": (
+                    "Đã đăng lại bài lên GitHub."
+                    if ok
+                    else "Đăng lại bài thất bại."
+                ),
+            }
+        )
+
+    return RedirectResponse(f"/publish/result/{result_id}", status_code=303)
 
 
 @app.post("/posts/{filename}/delete")
@@ -838,6 +960,21 @@ def add_topic(
             "---\n",
             encoding="utf-8",
         )
+    return RedirectResponse("/topics", status_code=303)
+
+
+@app.post("/topics/{slug}/move")
+def move_topic(slug: str, direction: str = Form(...)):
+    topics = load_topics()
+    index = next(
+        (i for i, topic in enumerate(topics) if topic.get("slug") == slug), None
+    )
+    if index is None:
+        raise HTTPException(404, "Không tìm thấy chủ đề.")
+    target = index - 1 if direction == "up" else index + 1
+    if 0 <= target < len(topics):
+        topics[index], topics[target] = topics[target], topics[index]
+        save_topics(topics)
     return RedirectResponse("/topics", status_code=303)
 
 
@@ -1005,6 +1142,8 @@ def publish_page(request: Request):
         {
             "request": request,
             "files": changed_files(),
+            "publish_results": PUBLISH_RESULTS,
+            "recent_commits": recent_commits(),
             "preview_url": PREVIEW_URL,
         },
     )
@@ -1059,11 +1198,7 @@ def publish(
             break
 
     joined = "\n\n".join(outputs)
-    result_id = uuid.uuid4().hex
-    PUBLISH_RESULTS[result_id] = joined
-    if len(PUBLISH_RESULTS) > 20:
-        oldest = next(iter(PUBLISH_RESULTS))
-        PUBLISH_RESULTS.pop(oldest, None)
+    result_id = record_publish_result(message or "Cập nhật blog", joined, success)
 
     if x_requested_with == "XMLHttpRequest":
         from fastapi.responses import JSONResponse
@@ -1076,26 +1211,38 @@ def publish(
             }
         )
 
-    return templates.TemplateResponse(
-        "publish.html",
-        {
-            "request": request,
-            "outputs": joined,
-            "preview_url": PREVIEW_URL,
-        },
-    )
+    return RedirectResponse(f"/publish/result/{result_id}", status_code=303)
 
 
 @app.get("/publish/result/{result_id}", response_class=HTMLResponse)
 def publish_result(request: Request, result_id: str):
-    outputs = PUBLISH_RESULTS.get(result_id)
-    if outputs is None:
+    result = next(
+        (item for item in PUBLISH_RESULTS if item["id"] == result_id), None
+    )
+    if result is None:
         raise HTTPException(404, "Không tìm thấy kết quả publish.")
     return templates.TemplateResponse(
         "publish.html",
         {
             "request": request,
-            "outputs": outputs,
+            "result": result,
+            "outputs": result["outputs"],
+            "preview_url": PREVIEW_URL,
+        },
+    )
+
+
+@app.get("/publish/commit/{commit_hash}", response_class=HTMLResponse)
+def publish_commit(request: Request, commit_hash: str):
+    output = commit_detail(commit_hash)
+    if output is None:
+        raise HTTPException(404, "Không tìm thấy commit.")
+    return templates.TemplateResponse(
+        "publish_commit.html",
+        {
+            "request": request,
+            "commit_hash": commit_hash,
+            "outputs": output,
             "preview_url": PREVIEW_URL,
         },
     )

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Chi tiết commit · Blog Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Chi tiết commit</h1>
+    <p class="muted"><code>{{ commit_hash }}</code></p>
+  </div>
+  <a class="btn" href="/publish">← Về Publish</a>
+</div>
+
+<pre class="output">{{ outputs }}</pre>
+{% endblock %}

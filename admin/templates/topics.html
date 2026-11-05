@@ -4,7 +4,7 @@
 <div class="page-head">
   <div>
     <h1>Chủ đề</h1>
-    <p class="muted">{{ topics|length }} chủ đề trong <code>_data/topics.yml</code></p>
+    <p class="muted">{{ topics|length }} chủ đề trong <code>_data/topics.yml</code> · dùng ↑ ↓ để đổi thứ tự hiển thị</p>
   </div>
   <a class="btn" href="/">← Danh sách bài</a>
 </div>
@@ -17,6 +17,7 @@
       <th>Slug</th>
       <th>Màu</th>
       <th>Mô tả</th>
+      <th>Thứ tự</th>
       <th></th>
     </tr>
   </thead>
@@ -27,6 +28,16 @@
       <td><code>{{ topic.slug }}</code></td>
       <td><span class="swatch" style="background: {{ topic.color }}"></span> {{ topic.color }}</td>
       <td class="muted small">{{ topic.description }}</td>
+      <td class="order-actions">
+        <form method="post" action="/topics/{{ topic.slug }}/move">
+          <input type="hidden" name="direction" value="up">
+          <button class="btn btn-tiny" type="submit" title="Đưa lên" {% if loop.first %}disabled{% endif %}>↑</button>
+        </form>
+        <form method="post" action="/topics/{{ topic.slug }}/move">
+          <input type="hidden" name="direction" value="down">
+          <button class="btn btn-tiny" type="submit" title="Đưa xuống" {% if loop.last %}disabled{% endif %}>↓</button>
+        </form>
+      </td>
       <td class="actions">
         <a class="btn" href="/topics/{{ topic.slug }}/edit">Sửa</a>
         <form method="post" action="/topics/{{ topic.slug }}/delete" onsubmit="return confirm('Xóa chủ đề này? Các bài viết thuộc chủ đề sẽ không còn trang chủ đề.');">
