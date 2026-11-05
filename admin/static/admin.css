@@ -54,9 +54,74 @@ a:hover { text-decoration: underline; }
   z-index: 10;
 }
 
-.brand { font-weight: 600; color: var(--ink); }
-.topbar nav { display: flex; gap: 1.2rem; }
-.topbar nav a { color: var(--muted); font-size: 0.95rem; }
+.brand {
+  font-weight: 600;
+  color: var(--ink);
+  padding: 0.35rem 0.2rem;
+  border-radius: 8px;
+  transition: color 0.2s ease;
+}
+
+.brand:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.topbar nav a {
+  position: relative;
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 0.38rem 0.6rem;
+  border-radius: 8px;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.topbar nav a::after {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: 0.18rem;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.22s ease;
+}
+
+.topbar nav a:hover {
+  color: var(--ink);
+  background: var(--bg);
+  text-decoration: none;
+}
+
+.topbar nav a:hover::after {
+  transform: scaleX(0.6);
+}
+
+.topbar nav a.active {
+  color: var(--accent);
+  background: var(--bg);
+}
+
+.topbar nav a.active::after {
+  transform: scaleX(1);
+}
+
+.topbar nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 .wrap { max-width: 1040px; margin: 0 auto; padding: 1.5rem; }
 .wrap-wide { max-width: 1680px; }

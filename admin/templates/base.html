@@ -9,12 +9,13 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/">Ghi chép của Giang · Admin</a>
+    {% set path = request.url.path %}
     <nav>
-      <a href="/">Bài viết</a>
-      <a href="/topics">Chủ đề</a>
-      <a href="/pages">Trang</a>
-      <a href="/settings">Cài đặt</a>
-      <a href="/publish">Publish</a>
+      <a href="/" class="{% if path == '/' or path.startswith('/posts') %}active{% endif %}" {% if path == '/' or path.startswith('/posts') %}aria-current="page"{% endif %}>Bài viết</a>
+      <a href="/topics" class="{% if path.startswith('/topics') %}active{% endif %}" {% if path.startswith('/topics') %}aria-current="page"{% endif %}>Chủ đề</a>
+      <a href="/pages" class="{% if path.startswith('/pages') %}active{% endif %}" {% if path.startswith('/pages') %}aria-current="page"{% endif %}>Trang</a>
+      <a href="/settings" class="{% if path.startswith('/settings') %}active{% endif %}" {% if path.startswith('/settings') %}aria-current="page"{% endif %}>Cài đặt</a>
+      <a href="/publish" class="{% if path.startswith('/publish') %}active{% endif %}" {% if path.startswith('/publish') %}aria-current="page"{% endif %}>Publish</a>
       <a href="{{ preview_url }}" target="_blank" rel="noopener">Local ↗</a>
       <a href="{{ site_url }}" target="_blank" rel="noopener">GitHub Pages ↗</a>
     </nav>
