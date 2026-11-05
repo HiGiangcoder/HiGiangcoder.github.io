@@ -87,14 +87,14 @@
 
 <div class="list-toolbar">
   <div class="post-tabs" role="group" aria-label="Lọc bài viết">
-    <button type="button" class="post-tab active" data-post-filter="all" aria-pressed="true">
-      Tất cả <span class="pill" data-tab-count="all">{{ posts|length }}</span>
-    </button>
     <button type="button" class="post-tab" data-post-filter="editing" aria-pressed="false">
       Đang chỉnh sửa <span class="pill" data-tab-count="editing">{{ editing_posts|length }}</span>
     </button>
     <button type="button" class="post-tab" data-post-filter="archived" aria-pressed="false">
       Lưu trữ <span class="pill" data-tab-count="archived">{{ archived_posts|length }}</span>
+    </button>
+    <button type="button" class="post-tab active" data-post-filter="all" aria-pressed="true">
+      Tất cả <span class="pill" data-tab-count="all">{{ posts|length }}</span>
     </button>
   </div>
 
