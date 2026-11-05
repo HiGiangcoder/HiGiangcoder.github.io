@@ -368,6 +368,7 @@ def list_posts() -> list[dict]:
                 "date": meta.get("date", ""),
                 "topic": meta.get("topic", ""),
                 "description": meta.get("description", ""),
+                "archived": bool(meta.get("archived", False)),
                 "tracked": is_tracked(f"_posts/{path.name}"),
             }
         )
@@ -393,6 +394,7 @@ def write_post(
     description: str,
     tags: str,
     content: str,
+    archived: bool = False,
 ) -> Path:
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
     parsed_time = parse_post_time(post_time)
@@ -404,6 +406,7 @@ def write_post(
         "topic": topic.strip(),
         "description": description.strip(),
         "tags": tag_list,
+        "archived": archived,
     }
     text = "---\n"
     text += yaml.safe_dump(metadata, allow_unicode=True, sort_keys=False)
@@ -427,6 +430,8 @@ def save_post_values(
     path = POSTS_DIR / filename
     if not path.exists():
         raise HTTPException(404, "Không tìm thấy bài viết.")
+    existing_meta, _ = load_post(path)
+    archived = bool(existing_meta.get("archived", False))
     if not title.strip():
         raise HTTPException(400, "Tiêu đề không được để trống.")
     if not topic.strip():
@@ -475,6 +480,7 @@ def save_post_values(
         description,
         tags,
         content,
+        archived=archived,
     )
     return filename, saved_path
 
@@ -577,8 +583,8 @@ def index(request: Request):
         {
             "request": request,
             "posts": posts,
-            "managed_posts": [p for p in posts if p["tracked"]],
-            "archived_posts": [p for p in posts if not p["tracked"]],
+            "editing_posts": [p for p in posts if not p["archived"]],
+            "archived_posts": [p for p in posts if p["archived"]],
             "topics": load_topics(),
             "changed_files": changed_files(),
             "files": changed_files(),
@@ -607,6 +613,8 @@ def new_post(request: Request):
             "content": "",
             "topics": load_topics(),
             "assets": [],
+            "tracked": False,
+            "archived": False,
             "admin_settings": load_site_data().get("admin", {}),
             "preview_ratio": load_site_data().get("preview_ratio", "1:2"),
             "preview_url": PREVIEW_URL,
@@ -669,6 +677,7 @@ def edit_post(request: Request, filename: str):
             "topics": load_topics(),
             "assets": list_assets(filename),
             "tracked": is_tracked(f"_posts/{filename}"),
+            "archived": bool(meta.get("archived", False)),
             "post_url": post_preview_url(filename, meta["date"]),
             "preview_ratio": load_site_data().get("preview_ratio", "1:2"),
             "admin_settings": load_site_data().get("admin", {}),
@@ -906,6 +915,29 @@ def republish_post(
         )
 
     return RedirectResponse(f"/publish/result/{result_id}", status_code=303)
+
+
+@app.post("/posts/{filename}/archive")
+def archive_post(filename: str, next_url: str = Form("/", alias="next")):
+    return set_post_archived(filename, True, next_url)
+
+
+@app.post("/posts/{filename}/unarchive")
+def unarchive_post(filename: str, next_url: str = Form("/", alias="next")):
+    return set_post_archived(filename, False, next_url)
+
+
+def set_post_archived(filename: str, archived: bool, next_url: str) -> RedirectResponse:
+    path = POSTS_DIR / filename
+    if not path.exists():
+        raise HTTPException(404, "Không tìm thấy bài viết.")
+
+    meta, content = load_meta_content(path)
+    meta["archived"] = archived
+    write_meta_content(path, meta, content)
+
+    target = next_url if next_url.startswith("/") and not next_url.startswith("//") else "/"
+    return RedirectResponse(target, status_code=303)
 
 
 @app.post("/posts/{filename}/delete")

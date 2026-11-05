@@ -125,6 +125,30 @@
     </form>
 
     {% if mode == 'edit' %}
+    <section class="panel stack">
+      <h2>Trạng thái bài viết</h2>
+      <p class="muted small">
+        {% if archived %}
+          Bài này đang ở <strong>kho lưu trữ</strong>. Chuyển về “Đang chỉnh sửa” nếu còn cần sửa tiếp.
+        {% else %}
+          Bài này đang ở trạng thái <strong>Đang chỉnh sửa</strong>. Khi đã xong, bạn có thể cất vào kho lưu trữ.
+        {% endif %}
+      </p>
+      <div class="git-actions">
+        {% if archived %}
+        <form method="post" action="/posts/{{ filename|urlencode }}/unarchive">
+          <input type="hidden" name="next" value="/posts/{{ filename|urlencode }}/edit">
+          <button class="btn primary" type="submit">Chuyển sang đang chỉnh sửa</button>
+        </form>
+        {% else %}
+        <form method="post" action="/posts/{{ filename|urlencode }}/archive">
+          <input type="hidden" name="next" value="/posts/{{ filename|urlencode }}/edit">
+          <button class="btn" type="submit">Lưu trữ bài viết</button>
+        </form>
+        {% endif %}
+      </div>
+    </section>
+
     <section class="panel stack" data-git-scope>
       <h2>Trạng thái GitHub</h2>
       <p class="muted small" data-git-description>

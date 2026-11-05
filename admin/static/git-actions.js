@@ -40,21 +40,6 @@
         ? "Bài này đang được đăng trên GitHub. Bạn có thể gỡ nó khỏi GitHub nhưng vẫn giữ file trên máy."
         : "Bài này chưa được đăng trên GitHub hoặc đã bị gỡ. Bạn có thể đăng lại.";
     }
-
-    // Trong danh sách bài viết: chuyển dòng sang đúng khu vực
-    // "Đang quản lý" / "Lưu trữ" mà không cần tải lại trang.
-    var row = scope.closest("[data-post-row]");
-    if (row) {
-      var target = document.querySelector(
-        tracked ? "[data-managed-section]" : "[data-archived-section]"
-      );
-      var tbody = target && target.querySelector("tbody");
-      if (tbody && row.parentElement !== tbody) {
-        tbody.prepend(row);
-      }
-      row.hidden = false;
-      document.dispatchEvent(new CustomEvent("git-state-changed"));
-    }
   }
 
   function showStatus(scope, message, ok) {

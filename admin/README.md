@@ -46,7 +46,8 @@ admin/
 ## Chức năng
 
 - Danh sách, tạo, sửa, xóa bài viết.
-- Tách danh sách bài thành **Đang quản lý** (đã đăng GitHub) và **Lưu trữ** (đã gỡ), kèm tìm kiếm.
+- Tách danh sách bài thành **Đang chỉnh sửa** và **Lưu trữ** theo trạng thái viết bài, kèm tìm kiếm và bộ lọc.
+- Bài mới mặc định ở trạng thái **Đang chỉnh sửa**; có thể lưu trữ hoặc chuyển lại bất cứ lúc nào.
 - Chỉnh sửa trang chính và Markdown chủ đề.
 - Thêm/sửa/xóa chủ đề và đổi thứ tự hiển thị bằng nút ↑ ↓.
 - Upload/xóa tài nguyên cho từng bài.

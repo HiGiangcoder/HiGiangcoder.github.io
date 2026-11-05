@@ -20,6 +20,11 @@
     >
       <td>
         <strong>{{ post.title }}</strong>
+        {% if post.archived %}
+          <span class="pill pill-warn">Lưu trữ</span>
+        {% else %}
+          <span class="pill pill-ok">Đang chỉnh sửa</span>
+        {% endif %}
         <span
           class="pill {% if post.tracked %}pill-ok{% else %}pill-warn{% endif %}"
           data-git-pill
@@ -32,6 +37,17 @@
       <td><span class="pill">{{ post.topic }}</span></td>
       <td class="actions">
         <a class="btn" href="/posts/{{ post.filename }}/edit">Sửa</a>
+
+        {% if post.archived %}
+        <form method="post" action="/posts/{{ post.filename|urlencode }}/unarchive">
+          <button class="btn" type="submit" title="Chuyển bài về trạng thái đang chỉnh sửa">Bỏ lưu trữ</button>
+        </form>
+        {% else %}
+        <form method="post" action="/posts/{{ post.filename|urlencode }}/archive">
+          <button class="btn" type="submit" title="Cất bài vào kho lưu trữ">Lưu trữ</button>
+        </form>
+        {% endif %}
+
         <form
           class="js-git-action"
           data-git-state="tracked"
@@ -74,8 +90,8 @@
     <button type="button" class="post-tab active" data-post-filter="all" aria-pressed="true">
       Tất cả <span class="pill" data-tab-count="all">{{ posts|length }}</span>
     </button>
-    <button type="button" class="post-tab" data-post-filter="managed" aria-pressed="false">
-      Đang quản lý <span class="pill" data-tab-count="managed">{{ managed_posts|length }}</span>
+    <button type="button" class="post-tab" data-post-filter="editing" aria-pressed="false">
+      Đang chỉnh sửa <span class="pill" data-tab-count="editing">{{ editing_posts|length }}</span>
     </button>
     <button type="button" class="post-tab" data-post-filter="archived" aria-pressed="false">
       Lưu trữ <span class="pill" data-tab-count="archived">{{ archived_posts|length }}</span>
@@ -91,21 +107,21 @@
   <span class="muted small" id="post-search-count"></span>
 </div>
 
-<section class="post-section" data-managed-section>
+<section class="post-section" data-editing-section>
   <div class="section-head">
-    <h2>Đang quản lý <span class="pill" data-count>{{ managed_posts|length }}</span></h2>
-    <p class="muted small">Các bài đang được đăng trên GitHub.</p>
+    <h2>Đang chỉnh sửa <span class="pill" data-count>{{ editing_posts|length }}</span></h2>
+    <p class="muted small">Những bài bạn đang viết hoặc còn cần sửa.</p>
   </div>
-  {{ post_table(managed_posts) }}
-  <p class="empty" data-section-empty {% if managed_posts %}hidden{% endif %}>
-    Chưa có bài nào đang quản lý.
+  {{ post_table(editing_posts) }}
+  <p class="empty" data-section-empty {% if editing_posts %}hidden{% endif %}>
+    Không có bài nào đang chỉnh sửa.
   </p>
 </section>
 
 <section class="post-section" data-archived-section>
   <div class="section-head">
     <h2>Lưu trữ <span class="pill" data-count>{{ archived_posts|length }}</span></h2>
-    <p class="muted small">Bài đã gỡ khỏi GitHub nhưng vẫn còn file trên máy. Có thể đăng lại bất cứ lúc nào.</p>
+    <p class="muted small">Những bài đã hoàn thành và được cất vào kho lưu trữ.</p>
   </div>
   {{ post_table(archived_posts) }}
   <p class="empty" data-section-empty {% if archived_posts %}hidden{% endif %}>
@@ -135,7 +151,7 @@
     var activeFilter = "all";
 
     function sectionKind(section) {
-      return section.hasAttribute("data-managed-section") ? "managed" : "archived";
+      return section.hasAttribute("data-editing-section") ? "editing" : "archived";
     }
 
     function isAllowed(section) {
@@ -148,7 +164,7 @@
     }
 
     function syncSections() {
-      var totals = { managed: 0, archived: 0 };
+      var totals = { editing: 0, archived: 0 };
 
       sections.forEach(function (section) {
         var kind = sectionKind(section);
@@ -163,8 +179,8 @@
         if (sectionEmpty) sectionEmpty.hidden = total !== 0;
       });
 
-      setTabCount("all", totals.managed + totals.archived);
-      setTabCount("managed", totals.managed);
+      setTabCount("all", totals.editing + totals.archived);
+      setTabCount("editing", totals.editing);
       setTabCount("archived", totals.archived);
     }
 
@@ -210,11 +226,6 @@
       input.addEventListener("input", applyFilter);
       input.addEventListener("search", applyFilter);
     }
-
-    document.addEventListener("git-state-changed", function () {
-      syncSections();
-      applyFilter();
-    });
 
     syncSections();
     applyFilter();
