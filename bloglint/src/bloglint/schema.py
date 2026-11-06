@@ -35,6 +35,7 @@ TEACHER_CATEGORIES = frozenset(
         "clarity",
         "coherence",
         "grammar",
+        "spelling",
         "style",
         "factual",
         "other",
@@ -285,6 +286,51 @@ class AnnotationRecord:
             model=_require_str(data.get("model"), "model"),
             issues=issues,
             id=data.get("id") or uuid.uuid4().hex,
+            created_at=data.get("created_at") or now_iso(),
+            meta=data.get("meta", {}),
+        )
+
+
+@dataclass
+class DocumentRecord:
+    """Bản sao nội dung bài viết, dùng để export SFT mà không phụ thuộc file gốc."""
+
+    content_sha256: str
+    title: str
+    source_path: str
+    body: str
+    created_at: str = field(default_factory=now_iso)
+    meta: dict = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _require_str(self.content_sha256, "content_sha256")
+        _require_str(self.title, "title", allow_empty=True)
+        _require_str(self.source_path, "source_path", allow_empty=True)
+        if not isinstance(self.body, str):
+            raise SchemaError("body phải là chuỗi")
+        _require_str(self.created_at, "created_at")
+        if not isinstance(self.meta, dict):
+            raise SchemaError("meta phải là object")
+
+    def to_dict(self) -> dict:
+        return {
+            "content_sha256": self.content_sha256,
+            "title": self.title,
+            "source_path": self.source_path,
+            "body": self.body,
+            "created_at": self.created_at,
+            "meta": self.meta,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "DocumentRecord":
+        if not isinstance(data, dict):
+            raise SchemaError("document phải là object")
+        return cls(
+            content_sha256=_require_str(data.get("content_sha256"), "content_sha256"),
+            title=data.get("title", ""),
+            source_path=data.get("source_path", ""),
+            body=data.get("body", ""),
             created_at=data.get("created_at") or now_iso(),
             meta=data.get("meta", {}),
         )

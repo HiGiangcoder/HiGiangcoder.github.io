@@ -95,7 +95,7 @@ text.py: front matter + paragraph/sentence + offset
 
 ### Kết quả kiểm thử thực tế (2026-11-06)
 
-- `PYTHONPATH=src python3 -m unittest discover -s tests -v` → **87 test, OK**.
+- `PYTHONPATH=src python3 -m unittest discover -s tests -v` → **100 test, OK**.
 - `python3 -m bloglint doctor` → chạy được, báo network tắt mặc định, API key chưa cấu hình.
 - `python3 -m bloglint analyze fixtures/sample_post.md` → 2 issue (cliche, filler_word),
   offset trỏ đúng vào body.
@@ -105,13 +105,22 @@ text.py: front matter + paragraph/sentence + offset
   chất lượng model.
 - Admin `POST /bloglint/analyze` → trả 4 issue cho nội dung thử; trang sửa bài render
   panel BlogLint; không gọi mạng.
-- Đã xác nhận daemon Ollama local proxy được `gpt-oss:120b-cloud` bằng **một request
-  thử cực nhỏ** (`Reply with exactly: OK` → `OK`). Đây chưa phải lần chạy BlogLint
-  teacher end-to-end và không tạo dataset.
-- Chưa có lần gọi teacher/cloud thật nào từ BlogLint. Kết quả teacher trong test đều
-  dùng fake transport.
+- Teacher `gpt-oss:120b-cloud` đã annotate end-to-end 9 bài trong `_posts/` qua Ollama
+  local proxy. Dataset pilot: **10 record, 65 issue, 0 trùng, mọi span khớp body**.
+  Phân bố: clarity 14, coherence 4, factual 9, grammar 14, spelling 2, style 22.
+- `backfill-documents` → **10 document**, mỗi hash khớp annotation.
+- `export-sft` → **8 train / 2 val**, hash train và val rời nhau.
+- Chưa chạy fine-tune; chưa có checkpoint hay metrics train nào.
 
-## 5. Ngoài phạm vi M0/M1
+## 5. Khoảng trống trước khi train
+
+- Cần review thủ công 65 issue pilot; một số issue có thể sai hoặc trùng ý.
+- Dataset còn nhỏ (10 bài); cần thêm bài và/hoặc nhiều model annotate.
+- Chưa cài `transformers`, `peft`, `trl`; chưa tải `Qwen3-VL-2B`.
+- GPU 4 GB VRAM không đủ; cần QLoRA trên GPU ≥ 12 GB hoặc Colab.
+- Chưa chạy fine-tune. Mọi số liệu train chỉ được báo sau khi chạy thật.
+
+## 6. Ngoài phạm vi M0/M1
 
 - Không generate dataset lớn.
 - Không chạy teacher trên toàn bộ blog.
@@ -119,7 +128,7 @@ text.py: front matter + paragraph/sentence + offset
 - Không tải checkpoint.
 - Không đánh giá chất lượng model thật khi chưa có dữ liệu và approval.
 
-## 6. Rủi ro & giảm thiểu
+## 7. Rủi ro & giảm thiểu
 
 | Rủi ro | Giảm thiểu |
 | --- | --- |
@@ -130,7 +139,7 @@ text.py: front matter + paragraph/sentence + offset
 | Offset lệch do front matter | Lưu offset trong `body`, không phải toàn file |
 | GPU 4 GB không đủ train | Ghi rõ là future work; đề xuất QLoRA/Colab |
 
-## 7. Kế hoạch kiểm thử
+## 8. Kế hoạch kiểm thử
 
 ```bash
 cd bloglint
@@ -144,14 +153,16 @@ Các nhóm test:
 - `test_diagnostics.py`
 - `test_teacher.py`
 - `test_dataset.py`
+- `test_sft.py`
 - `test_evaluation.py`
 - `test_cli.py`
 - `test_integration.py`
 
-## 8. Việc tiếp theo (ngoài M1)
+## 9. Việc tiếp theo (ngoài M1)
 
-1. Được duyệt và cấu hình Ollama API key.
-2. Chạy `annotate` trên một mẫu nhỏ (10–20 bài) để đo chất lượng teacher.
-3. Review thủ công, tạo golden set lớn hơn.
-4. Chỉ khi chất lượng đạt: generate dataset SFT có kiểm soát.
-5. Train LoRA Qwen3-VL-2B trên GPU đủ mạnh (hoặc Colab), không dùng GPU 4 GB.
+1. Review thủ công 65 issue pilot; sửa/xoá issue sai trước khi dùng làm target SFT.
+2. Bổ sung thêm bài viết hoặc chạy thêm model để tăng độ phủ dữ liệu.
+3. Kiểm tra `data/sft/train.jsonl` / `val.jsonl` bằng mắt và bằng script.
+4. Dựng môi trường train (`transformers`, `peft`, `trl`, bitsandbytes) trên GPU ≥ 12 GB
+   hoặc Colab; dùng QLoRA cho Qwen3-VL-2B.
+5. Chỉ train sau khi có approval rõ ràng; báo metrics thật, không suy đoán.

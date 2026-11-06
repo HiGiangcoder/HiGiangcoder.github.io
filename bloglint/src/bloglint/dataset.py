@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from .schema import AnnotationRecord, Document, Issue, now_iso
+from .schema import AnnotationRecord, Document, DocumentRecord, Issue, now_iso
 
 
 class DatasetError(RuntimeError):
@@ -95,9 +95,74 @@ def make_record(
     )
 
 
+def read_documents(path: str | Path) -> list[DocumentRecord]:
+    file_path = Path(path)
+    if not file_path.exists():
+        return []
+    documents: list[DocumentRecord] = []
+    with file_path.open("r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise DatasetError(
+                    f"{file_path}:{line_number}: JSON không hợp lệ: {exc}"
+                ) from exc
+            try:
+                documents.append(DocumentRecord.from_dict(data))
+            except Exception as exc:
+                raise DatasetError(
+                    f"{file_path}:{line_number}: document không hợp lệ: {exc}"
+                ) from exc
+    return documents
+
+
+def append_documents(
+    path: str | Path, documents: list[DocumentRecord]
+) -> AppendResult:
+    """Append document mới, bỏ qua bản trùng theo content_sha256."""
+    file_path = Path(path)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = {document.content_sha256 for document in read_documents(file_path)}
+    to_write: list[DocumentRecord] = []
+    skipped = 0
+    for document in documents:
+        if document.content_sha256 in existing:
+            skipped += 1
+            continue
+        existing.add(document.content_sha256)
+        to_write.append(document)
+
+    if to_write:
+        with file_path.open("a", encoding="utf-8") as handle:
+            for document in to_write:
+                handle.write(
+                    json.dumps(document.to_dict(), ensure_ascii=False, sort_keys=True) + "\n"
+                )
+
+    return AppendResult(written=len(to_write), skipped=skipped, path=file_path)
+
+
+def make_document_record(document: Document) -> DocumentRecord:
+    return DocumentRecord(
+        content_sha256=document.content_sha256,
+        title=document.title,
+        source_path=document.path,
+        body=document.body,
+        meta={"front_matter_keys": sorted(document.front_matter.keys())},
+    )
+
+
 def build_manifest(data_dir: str | Path) -> dict:
     data_path = Path(data_dir)
-    files = sorted(data_path.glob("*.jsonl"))
+    files = sorted(
+        path
+        for path in data_path.glob("*.jsonl")
+        if path.name != "documents.jsonl"
+    )
     per_model: dict[str, int] = {}
     per_category: dict[str, int] = {}
     documents: set[str] = set()

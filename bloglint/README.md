@@ -13,8 +13,10 @@ Trợ lý chẩn đoán bài viết tiếng Việt cho blog Jekyll trong repo n�
 | --- | --- |
 | M0 — schema, parser, rule engine, CLI | Hoàn thành |
 | M1 — teacher client, dataset, benchmark, admin panel | Hoàn thành |
+| Pilot annotation 9 bài blog | Hoàn thành: 10 record, 65 issue |
+| Export SFT train/val | Hoàn thành pilot: 8 train / 2 val |
 | Generate dataset quy mô lớn | Chưa làm (ngoài phạm vi) |
-| Fine-tune Student | Chưa làm (ngoài phạm vi) |
+| Fine-tune Student | Chưa làm; chưa có checkpoint hay kết quả train |
 
 ## Cài đặt
 
@@ -45,6 +47,12 @@ export BLOGLINT_OLLAMA_API_KEY="..."
 PYTHONPATH=src python3 -m bloglint annotate ../_posts/bai.md \
   --allow-network --append-dataset data/annotations.jsonl
 
+# Sao lưu body bài đã annotate vào documents.jsonl (append-only)
+PYTHONPATH=src python3 -m bloglint backfill-documents
+
+# Export SFT train/val; từ chối ghi đè nếu output đã tồn tại
+PYTHONPATH=src python3 -m bloglint export-sft --output-dir data/sft
+
 # Đánh giá trên golden fixture nhỏ
 PYTHONPATH=src python3 -m bloglint benchmark
 
@@ -70,9 +78,10 @@ bloglint/
 │   ├── text.py          # front matter, đoạn, câu, mask code
 │   ├── diagnostics.py   # rule tiếng Việt, deterministic
 │   ├── teacher.py       # prompt + Ollama client có guard
-│   ├── dataset.py       # JSONL append-only + manifest
+│   ├── dataset.py       # JSONL append-only + document corpus + manifest
+│   ├── sft.py           # export train/val SFT, chưa train
 │   ├── evaluation.py    # precision/recall/F1 trên golden fixture
-│   └── cli.py           # doctor/analyze/annotate/benchmark/dataset-stats
+│   └── cli.py           # doctor/analyze/annotate/benchmark/dataset-stats/export-sft
 ├── tests/               # unittest
 ├── fixtures/            # bài mẫu + golden smoke fixture
 ├── docs/                # kế hoạch và quyết định
@@ -81,7 +90,7 @@ bloglint/
 
 ## Định dạng dataset
 
-Mỗi dòng JSONL là một `AnnotationRecord`:
+`data/annotations.jsonl` (append-only, mỗi dòng một `AnnotationRecord`):
 
 ```json
 {
@@ -107,6 +116,24 @@ Mỗi dòng JSONL là một `AnnotationRecord`:
 }
 ```
 
+`data/documents.jsonl` (append-only, mỗi dòng một `DocumentRecord`) lưu body bài viết
+theo `content_sha256`:
+
+```json
+{
+  "content_sha256": "…",
+  "title": "Tiêu đề",
+  "source_path": "../_posts/bai.md",
+  "body": "Nội dung bài…",
+  "created_at": "2026-11-06T00:00:00+00:00",
+  "meta": {"front_matter_keys": ["title"]}
+}
+```
+
+`export-sft` join hai file trên và ghi `train.jsonl`, `val.jsonl`, `dataset_info.json`.
+Mỗi example có `messages` (user = prompt teacher, assistant = JSON `issues` với
+`quote`), split theo `content_sha256` để train/val không rò rỉ bài.
+
 ## Benchmark
 
 `fixtures/golden.jsonl` là **smoke fixture nhỏ do con người viết**, dùng để kiểm tra
@@ -126,7 +153,13 @@ Overall: P=1.0000 R=1.0000 F1=1.0000 (TP=6, FP=0, FN=0)
   rule lặp từ có thể báo nhầm các âm tiết trong từ ghép (ví dụ “giác quan” bị tách
   thành “giác” và “quan”); admin mặc định ẩn các gợi ý mức `info`.
 - `max_sentence_words` đếm theo âm tiết (`\w+`), không theo từ ghép.
-- BlogLint teacher chưa chạy end-to-end. Đã xác nhận daemon Ollama local proxy được
-  `gpt-oss:120b-cloud` bằng một request thử cực nhỏ, nhưng chưa annotate bài thật.
-- Chưa có dataset SFT, chưa fine-tune, chưa tải checkpoint.
+- Teacher đã chạy end-to-end trên 9 bài blog thật qua Ollama local proxy
+  (`gpt-oss:120b-cloud`), tạo 10 record / 65 issue. Chất lượng issue **chưa được
+  review thủ công đầy đủ**.
+- Matcher quote đi qua 3 lớp: khớp chính xác → gộp khoảng trắng → bỏ markdown/dấu câu/
+  hoa thường; có fuzzy match thận trọng cho paraphrase gần đúng. Quote lệch quá xa
+  vẫn bị từ chối.
+- Dataset pilot còn nhỏ (10 bài); chưa đủ để train có ý nghĩa.
+- Đã export SFT pilot 8 train / 2 val, nhưng **chưa fine-tune, chưa có checkpoint,
+  chưa cài `transformers`/`peft`/`trl`**.
 - GPU local 4 GB VRAM không phù hợp để train Qwen3-VL-2B; cần QLoRA/Colab/GPU đủ mạnh.

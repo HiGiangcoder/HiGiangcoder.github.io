@@ -9,8 +9,10 @@ Nguyên tắc an toàn:
 
 from __future__ import annotations
 
+import difflib
 import json
 import re
+import unicodedata
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -26,7 +28,7 @@ Trả về DUY NHẤT một JSON object theo cấu trúc:
 {
   "issues": [
     {
-      "category": "clarity | coherence | grammar | style | factual | other",
+      "category": "clarity | coherence | grammar | spelling | style | factual | other",
       "severity": "info | warning | error",
       "message": "mô tả ngắn gọn bằng tiếng Việt",
       "suggestion": "gợi ý sửa cụ thể",
@@ -103,6 +105,94 @@ def extract_json(text: str) -> dict:
     return payload
 
 
+def _normalize_with_map(text: str) -> tuple[str, list[int]]:
+    """Gộp mọi khoảng trắng thành một space và giữ map về vị trí gốc."""
+    chars: list[str] = []
+    mapping: list[int] = []
+    in_whitespace = False
+    for index, char in enumerate(text):
+        if char.isspace():
+            if not in_whitespace and chars:
+                chars.append(" ")
+                mapping.append(index)
+            in_whitespace = True
+        else:
+            chars.append(char)
+            mapping.append(index)
+            in_whitespace = False
+    while chars and chars[-1] == " ":
+        chars.pop()
+        mapping.pop()
+    return "".join(chars), mapping
+
+
+def _normalize_alnum_with_map(text: str) -> tuple[str, list[int]]:
+    """Bỏ markdown/dấu câu/khác biệt hoa thường, giữ map về vị trí gốc.
+
+    Dùng làm lớp fallback cuối: teacher thường bỏ ``**``, đổi dấu câu hoặc
+    viết hoa chữ đầu câu trong quote.
+    """
+    normalized = unicodedata.normalize("NFC", text)
+    if len(normalized) != len(text):  # pragma: no cover - hiếm với tiếng Việt
+        normalized = text
+
+    chars: list[str] = []
+    mapping: list[int] = []
+    pending_space = False
+    for index, char in enumerate(normalized):
+        if char.isalnum():
+            if pending_space and chars:
+                chars.append(" ")
+                mapping.append(index)
+            pending_space = False
+            chars.append(char.lower())
+            mapping.append(index)
+        else:
+            pending_space = bool(chars)
+    return "".join(chars), mapping
+
+
+def _find_quote_span(body: str, quote: str) -> Span | None:
+    """Tìm quote chính xác, sau đó thử các lớp chuẩn hoá tăng dần."""
+    position = body.find(quote)
+    if position != -1:
+        return Span(start=position, end=position + len(quote), text=quote)
+
+    # Lớp 1: gộp khoảng trắng (Markdown xuống dòng giữa câu).
+    normalized_body, mapping = _normalize_with_map(body)
+    normalized_quote, _ = _normalize_with_map(quote)
+    if normalized_quote:
+        position = normalized_body.find(normalized_quote)
+        if position != -1:
+            start = mapping[position]
+            end = mapping[position + len(normalized_quote) - 1] + 1
+            return Span(start=start, end=end, text=body[start:end])
+
+    # Lớp 2: bỏ markdown, dấu câu, khác biệt hoa thường.
+    alnum_body, alnum_mapping = _normalize_alnum_with_map(body)
+    alnum_quote, _ = _normalize_alnum_with_map(quote)
+    if not alnum_quote:
+        return None
+    position = alnum_body.find(alnum_quote)
+    if position != -1:
+        start = alnum_mapping[position]
+        end = alnum_mapping[position + len(alnum_quote) - 1] + 1
+        return Span(start=start, end=end, text=body[start:end])
+
+    # Lớp 3: quote gần đúng nhưng teacher đổi một từ ở đầu/cuối câu.
+    # Chỉ chấp nhận khi phần khớp dài và chiếm phần lớn quote.
+    if len(alnum_quote) < 30:
+        return None
+    match = difflib.SequenceMatcher(
+        None, alnum_body, alnum_quote, autojunk=False
+    ).find_longest_match(0, len(alnum_body), 0, len(alnum_quote))
+    if match.size < 30 or match.size / len(alnum_quote) < 0.85:
+        return None
+    start = alnum_mapping[match.a]
+    end = alnum_mapping[match.a + match.size - 1] + 1
+    return Span(start=start, end=end, text=body[start:end])
+
+
 def issues_from_payload(payload: dict, body: str) -> list[Issue]:
     issues: list[Issue] = []
     for index, item in enumerate(payload.get("issues", [])):
@@ -123,12 +213,11 @@ def issues_from_payload(payload: dict, body: str) -> list[Issue]:
         quote = str(item.get("quote", "")).strip()
         span = None
         if quote:
-            position = body.find(quote)
-            if position == -1:
+            span = _find_quote_span(body, quote)
+            if span is None:
                 raise TeacherResponseError(
                     f"issues[{index}] có quote không xuất hiện trong bài: {quote[:60]!r}"
                 )
-            span = Span(start=position, end=position + len(quote), text=quote)
 
         try:
             issues.append(

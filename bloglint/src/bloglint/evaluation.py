@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 from .diagnostics import analyze_body
-from .schema import Issue, SchemaError, Span, TEACHER_CATEGORIES, SEVERITIES
+from .schema import CATEGORIES, Issue, SchemaError, Span, SEVERITIES
 
 
 class EvaluationError(RuntimeError):
@@ -86,16 +86,7 @@ def load_golden(path: str | Path) -> list[GoldCase]:
                 if not isinstance(item, dict):
                     raise EvaluationError(f"{label}: phải là object.")
                 category = item.get("category", "")
-                if category not in TEACHER_CATEGORIES | {
-                    "sentence_too_long",
-                    "paragraph_too_long",
-                    "filler_word",
-                    "cliche",
-                    "repetition",
-                    "punctuation",
-                    "passive_overuse",
-                    "structure",
-                }:
+                if category not in CATEGORIES:
                     raise EvaluationError(f"{label}: category không hợp lệ: {category!r}")
                 severity = item.get("severity", "warning")
                 if severity not in SEVERITIES:

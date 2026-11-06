@@ -86,6 +86,106 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(issues[0].span.text, "Trong thời đại ngày nay")
         self.assertEqual(issues[0].source, "teacher")
 
+    def test_quote_with_normalized_whitespace_maps_back(self) -> None:
+        body = "Thực sự thì việc bắt\nđầu không khó."
+        payload = {
+            "issues": [
+                {
+                    "category": "style",
+                    "severity": "info",
+                    "message": "Câu mở đầu",
+                    "quote": "Thực sự thì việc bắt đầu không khó.",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        self.assertEqual(issues[0].span.start, 0)
+        self.assertEqual(issues[0].span.end, len(body))
+        self.assertEqual(issues[0].span.text, body)
+
+    def test_quote_with_extra_spaces_maps_back(self) -> None:
+        body = "Một  câu   có khoảng trắng."
+        payload = {
+            "issues": [
+                {
+                    "category": "style",
+                    "severity": "info",
+                    "message": "x",
+                    "quote": "Một câu có khoảng trắng.",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        self.assertEqual(issues[0].span.start, 0)
+        self.assertEqual(issues[0].span.end, len(body))
+
+    def test_quote_ignores_case_and_markdown_bold(self) -> None:
+        body = "Thứ hai, khán giả bị **xẹp lại thành một**. Trên mạng ai cũng thấy."
+        payload = {
+            "issues": [
+                {
+                    "category": "style",
+                    "severity": "info",
+                    "message": "x",
+                    "quote": "Khán giả bị **xẹp lại thành một**.",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        span_text = issues[0].span.text
+        self.assertIn("khán giả bị **xẹp lại thành một", span_text)
+        self.assertEqual(body[issues[0].span.start : issues[0].span.end], span_text)
+
+    def test_quote_ignores_punctuation_difference(self) -> None:
+        body = "Họ hỏi: “làm sao để những quy tắc ấy có thể bị chất vấn?”"
+        payload = {
+            "issues": [
+                {
+                    "category": "clarity",
+                    "severity": "info",
+                    "message": "x",
+                    "quote": "làm sao để những quy tắc ấy có thể bị chất vấn!",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        self.assertIn("chất vấn", issues[0].span.text)
+
+    def test_quote_with_curly_quotes_and_blank_line(self) -> None:
+        body = 'Sẵn sàng chưa?\n\n"Tiêu."\n\nBắt đầu!\n'
+        payload = {
+            "issues": [
+                {
+                    "category": "style",
+                    "severity": "info",
+                    "message": "x",
+                    "quote": "“Tiêu.”\nBắt đầu!",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        self.assertIn("Tiêu", issues[0].span.text)
+        self.assertIn("Bắt đầu", issues[0].span.text)
+
+    def test_quote_with_one_word_paraphrase_maps_to_common_span(self) -> None:
+        body = (
+            "Chúng ta phải xác định mục tiêu nhằm nhìn thấy vị trí của bản thân, "
+            "rằng ta đã tiến bộ đến nhường nào rồi."
+        )
+        payload = {
+            "issues": [
+                {
+                    "category": "clarity",
+                    "severity": "info",
+                    "message": "x",
+                    "quote": "để nhìn thấy vị trí của bản thân, rằng ta đã tiến bộ đến nhường nào rồi.",
+                }
+            ]
+        }
+        issues = issues_from_payload(payload, body)
+        self.assertTrue(issues[0].span.text.startswith("nhìn thấy vị trí"))
+        self.assertIn("nhường nào rồi", issues[0].span.text)
+
     def test_missing_quote_is_rejected(self) -> None:
         payload = {
             "issues": [

@@ -40,7 +40,14 @@ thay ký tự bằng khoảng trắng cùng độ dài để offset không lệc
 an toàn hơn và kiểm chứng được.
 
 **Hệ quả**: quote không tồn tại trong bài bị từ chối toàn bộ response
-(`TeacherResponseError`), tránh dữ liệu bẩn.
+(`TeacherResponseError`), tránh dữ liệu bẩn. Việc tìm quote đi qua 3 lớp:
+
+1. khớp chính xác;
+2. gộp khoảng trắng (Markdown xuống dòng giữa câu);
+3. bỏ markdown/dấu câu và không phân biệt hoa thường, sau đó ánh xạ ngược về offset gốc.
+
+Lớp 3 xử lý các trường hợp teacher bỏ `**bold**`, đổi `?` thành `!`, dùng ngoặc cong
+thay ngoặc thẳng hoặc viết hoa chữ đầu câu.
 
 ## D6. Dataset JSONL append-only, khóa chống trùng `(content_sha256, model)`
 
@@ -74,9 +81,27 @@ muốn đánh giá thật cần golden set độc lập do người review.
 **Hệ quả**: endpoint `/bloglint/analyze` import `bloglint` từ `/site/bloglint/src`
 nếu có; nếu thiếu package thì trả 503 thay vì làm sập admin.
 
-## D10. Chưa generate dataset, chưa fine-tune
+## D10. Pilot dataset và SFT export đã làm; fine-tune thì chưa
 
-**Lý do**: brief giới hạn M0/M1; chưa có approval rõ ràng; chưa có API key; GPU
-4 GB VRAM không đủ thoải mái cho Qwen3-VL-2B.
+**Lý do**: teacher local proxy đã chạy được, nên đã annotate 9 bài blog thật và export
+pilot SFT để kiểm tra pipeline. Fine-tune vẫn cần approval riêng vì dataset nhỏ, chưa
+review thủ công, và GPU 4 GB VRAM không đủ.
 
-**Hệ quả**: các bước tiếp theo cần approval riêng, cấu hình key, và phần cứng phù hợp.
+**Hệ quả**: `data/annotations.jsonl`, `data/documents.jsonl`, `data/sft/` là dữ liệu
+local (gitignored). Chưa có checkpoint, chưa cài thư viện train, chưa có metric train.
+
+## D11. Body bài viết lưu ở `documents.jsonl` riêng
+
+**Lý do**: không sửa schema annotation cũ và không ghi đè dataset; cùng một body có
+thể dùng cho nhiều model/annotation.
+
+**Hệ quả**: `documents.jsonl` append-only, khóa `content_sha256`. `export-sft` join
+annotation với document theo hash; thiếu document thì báo lỗi thay vì bịa body.
+
+## D12. Target SFT dùng `quote`, không dùng offset nội bộ
+
+**Lý do**: prompt teacher yêu cầu `quote`; nếu target chứa `span/start/end` thì Student
+học sai định dạng đầu ra.
+
+**Hệ quả**: `sft._assistant_payload` chỉ xuất `category`, `severity`, `message`,
+`suggestion`, `quote`. Offset được tính lại khi parse response của Student.

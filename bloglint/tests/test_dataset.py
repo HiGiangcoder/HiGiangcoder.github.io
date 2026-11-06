@@ -7,9 +7,12 @@ from pathlib import Path
 
 from bloglint.dataset import (
     DatasetError,
+    append_documents,
     append_records,
     build_manifest,
+    make_document_record,
     make_record,
+    read_documents,
     read_records,
     write_manifest,
 )
@@ -74,6 +77,44 @@ class AppendTests(unittest.TestCase):
     def test_missing_file_reads_empty(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             self.assertEqual(read_records(Path(temp) / "none.jsonl"), [])
+
+
+class DocumentTests(unittest.TestCase):
+    def test_append_and_read_documents(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "documents.jsonl"
+            document = document_from_body("Nội dung bài.", title="Bài", path="bai.md")
+            result = append_documents(path, [make_document_record(document)])
+            self.assertEqual(result.written, 1)
+            self.assertEqual(result.skipped, 0)
+
+            documents = read_documents(path)
+            self.assertEqual(len(documents), 1)
+            self.assertEqual(documents[0].body, "Nội dung bài.")
+            self.assertEqual(documents[0].content_sha256, document.content_sha256)
+
+    def test_duplicate_document_is_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "documents.jsonl"
+            document = document_from_body("Nội dung bài.", title="Bài")
+            append_documents(path, [make_document_record(document)])
+            before = path.read_bytes()
+
+            result = append_documents(path, [make_document_record(document)])
+            self.assertEqual(result.written, 0)
+            self.assertEqual(result.skipped, 1)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_document_does_not_break_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp) / "data"
+            append_records(data_dir / "annotations.jsonl", [record("Nội dung một.")])
+            document = document_from_body("Nội dung một.", title="Bài")
+            append_documents(data_dir / "documents.jsonl", [make_document_record(document)])
+
+            manifest = build_manifest(data_dir)
+            self.assertEqual(manifest["totals"]["records"], 1)
+            self.assertEqual([item["name"] for item in manifest["files"]], ["annotations.jsonl"])
 
 
 class ManifestTests(unittest.TestCase):

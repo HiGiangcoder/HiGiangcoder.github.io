@@ -9,7 +9,15 @@ from pathlib import Path
 
 from . import __version__
 from .config import Settings
-from .dataset import append_records, build_manifest, make_record, write_manifest
+from .dataset import (
+    append_documents,
+    append_records,
+    build_manifest,
+    make_document_record,
+    make_record,
+    read_records,
+    write_manifest,
+)
 from .diagnostics import DiagnosticsConfig, analyze_document, summarize
 from .evaluation import benchmark
 from .schema import Document
@@ -258,6 +266,107 @@ def cmd_dataset_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backfill_documents(args: argparse.Namespace) -> int:
+    """Sao lưu body của mọi bài đã annotate vào documents.jsonl append-only."""
+    settings = Settings.from_env(args.repo_root)
+    annotations = (
+        Path(args.annotations).expanduser()
+        if args.annotations
+        else settings.data_dir / "annotations.jsonl"
+    )
+    documents_path = (
+        Path(args.documents).expanduser()
+        if args.documents
+        else settings.data_dir / "documents.jsonl"
+    )
+
+    records = read_records(annotations)
+    if not records:
+        print(f"Không có annotation record nào trong {annotations}.", file=sys.stderr)
+        return 2
+
+    documents = []
+    seen: set[str] = set()
+    missing: list[str] = []
+    mismatched: list[str] = []
+    for record in records:
+        if record.content_sha256 in seen:
+            continue
+        source = Path(record.source_path).expanduser()
+        if not source.exists():
+            missing.append(record.source_path)
+            continue
+        document = load_document(source)
+        if document.content_sha256 != record.content_sha256:
+            mismatched.append(record.source_path)
+            continue
+        seen.add(record.content_sha256)
+        documents.append(make_document_record(document))
+
+    if not documents:
+        print("Không backfill được document nào.", file=sys.stderr)
+        return 1
+
+    result = append_documents(documents_path, documents)
+    print(
+        f"Documents: ghi {result.written}, bỏ qua {result.skipped} → {result.path}"
+    )
+    if missing:
+        print(f"Thiếu file nguồn ({len(missing)}):", file=sys.stderr)
+        for path in missing:
+            print(f"- {path}", file=sys.stderr)
+    if mismatched:
+        print(f"Hash không khớp ({len(mismatched)}):", file=sys.stderr)
+        for path in mismatched:
+            print(f"- {path}", file=sys.stderr)
+    return 0 if not (missing or mismatched) else 1
+
+
+def cmd_export_sft(args: argparse.Namespace) -> int:
+    from .sft import SFTError, export_sft
+
+    settings = Settings.from_env(args.repo_root)
+    annotations = (
+        Path(args.annotations).expanduser()
+        if args.annotations
+        else settings.data_dir / "annotations.jsonl"
+    )
+    documents = (
+        Path(args.documents).expanduser()
+        if args.documents
+        else settings.data_dir / "documents.jsonl"
+    )
+    output = (
+        Path(args.output_dir).expanduser()
+        if args.output_dir
+        else settings.data_dir / "sft"
+    )
+
+    try:
+        result = export_sft(
+            annotations,
+            documents,
+            output,
+            val_ratio=args.val_ratio,
+            seed=args.seed,
+            model=args.model,
+        )
+    except SFTError as exc:
+        print(f"Export lỗi: {exc}", file=sys.stderr)
+        return 2
+
+    info = result.info
+    if args.json:
+        _print_json(info)
+        return 0
+    print(f"Output: {result.output_dir}")
+    print(f"Train: {result.train_examples} example")
+    print(f"Val: {result.val_examples} example")
+    print(f"Document: {info['unique_documents']}")
+    print(f"Thiếu document: {result.skipped_missing_documents}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="bloglint", description="BlogLint CLI")
     parser.add_argument("--version", action="version", version=f"bloglint {__version__}")
@@ -300,6 +409,26 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("--write-manifest", action="store_true")
     stats.add_argument("--json", action="store_true")
     stats.set_defaults(func=cmd_dataset_stats)
+
+    backfill = subparsers.add_parser(
+        "backfill-documents",
+        help="Sao lưu body bài đã annotate vào documents.jsonl (append-only).",
+    )
+    backfill.add_argument("--annotations", default=None)
+    backfill.add_argument("--documents", default=None)
+    backfill.set_defaults(func=cmd_backfill_documents)
+
+    export = subparsers.add_parser(
+        "export-sft", help="Export annotation + document thành train/val SFT."
+    )
+    export.add_argument("--annotations", default=None)
+    export.add_argument("--documents", default=None)
+    export.add_argument("--output-dir", default=None)
+    export.add_argument("--val-ratio", type=float, default=0.2)
+    export.add_argument("--seed", type=int, default=42)
+    export.add_argument("--model", default=None, help="Chỉ export record của model này.")
+    export.add_argument("--json", action="store_true")
+    export.set_defaults(func=cmd_export_sft)
 
     return parser
 
