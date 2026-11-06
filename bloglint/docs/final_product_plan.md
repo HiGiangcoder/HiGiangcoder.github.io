@@ -116,14 +116,12 @@ sau khi chạy evaluation.
 
 ## 4. Trạng thái hiện tại
 
-- Dataset pilot: 10 bài, 65 issue, chưa review thủ công.
-- SFT pilot v4: 8 train / 4 val example, chunk tối đa 6000 ký tự, 56 issue trong phạm vi.
-- Audit: 0 blocking, 14 warning.
-- Train pilot: 1 epoch, 8 example, QLoRA 4-bit trên RTX 4060 8 GB, adapter lưu tại
-  `data/train-runs/pilot-001`.
-- Eval pilot: 2 bài held-out, 4 prediction, **0 parse JSON hợp lệ, F1 = 0.0000**.
-  Model chưa usable.
-- Chưa có training script test đầy đủ trên nhiều epoch; chưa cài thư viện train local (4 GB).
+- Dataset: 101 record từ 9 bài blog + 92 bài Vietnamese news, 787 issue.
+- Audit: 2 blocking (duplicate issue cùng span), 134 warning.
+- SFT v5: 82 train / 20 val example, 102 chunk, 100 document, 749 issue trong phạm vi.
+- Train pilot v1: 1 epoch, 8 example, QLoRA 4-bit, F1 = 0.0000 (chưa usable).
+- Training v5 chưa chạy vì SSH `master.iec` hiện không kết nối được.
+- Đang annotate thêm 200 bài trong background.
 
 ## 5. Việc làm ngay
 
