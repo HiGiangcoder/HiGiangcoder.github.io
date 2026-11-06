@@ -113,6 +113,7 @@ def main() -> int:
     parser.add_argument("--input-dir", required=True, help="Thư mục extracted/blogs")
     parser.add_argument("--output", required=True, help="File JSONL đầu ra")
     parser.add_argument("--limit", type=int, default=5000, help="Số post tối đa")
+    parser.add_argument("--offset", type=int, default=0, help="Bỏ qua N post đầu tiên")
     parser.add_argument("--max-per-author", type=int, default=3, help="Số post tối đa mỗi tác giả")
     parser.add_argument("--cutoff-year", type=int, default=2022, help="Chỉ giữ post có năm <= cutoff")
     args = parser.parse_args()
@@ -123,6 +124,7 @@ def main() -> int:
 
     files = sorted(input_dir.glob("*.xml"))
     written = 0
+    skipped_seen = 0
     skipped_date = 0
     with output_path.open("w", encoding="utf-8") as handle:
         for path in files:
@@ -134,6 +136,9 @@ def main() -> int:
                 date = post["date"]
                 if date is not None and int(date[:4]) > args.cutoff_year:
                     skipped_date += 1
+                    continue
+                if skipped_seen < args.offset:
+                    skipped_seen += 1
                     continue
                 handle.write(json.dumps(post, ensure_ascii=False) + "\n")
                 written += 1
