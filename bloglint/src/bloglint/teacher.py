@@ -28,7 +28,7 @@ Trả về DUY NHẤT một JSON object theo cấu trúc:
 {
   "issues": [
     {
-      "category": "clarity | coherence | grammar | spelling | style | factual | other",
+      "category": "clarity | coherence | grammar | spelling | style | factual | punctuation | other",
       "severity": "info | warning | error",
       "message": "mô tả ngắn gọn bằng tiếng Việt",
       "suggestion": "gợi ý sửa cụ thể",

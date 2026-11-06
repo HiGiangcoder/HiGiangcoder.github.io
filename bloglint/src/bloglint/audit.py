@@ -12,7 +12,7 @@ from .dataset import read_documents, read_records
 from .schema import AnnotationRecord, DocumentRecord, Issue, now_iso
 
 # Category dùng cho SFT chính. Factual chỉ để tham khảo vì cần kiểm chứng ngoài.
-TRAIN_CATEGORIES = frozenset({"clarity", "coherence", "grammar", "spelling", "style"})
+TRAIN_CATEGORIES = frozenset({"clarity", "coherence", "grammar", "spelling", "style", "punctuation"})
 
 SHORT_QUOTE_CHARS = 16
 SHORT_QUOTE_WORDS = 3

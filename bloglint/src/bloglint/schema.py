@@ -38,6 +38,7 @@ TEACHER_CATEGORIES = frozenset(
         "spelling",
         "style",
         "factual",
+        "punctuation",
         "other",
     }
 )
