@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 import unicodedata
 import uuid
@@ -41,6 +42,19 @@ PREVIEW_URL = os.environ.get("PREVIEW_URL", "http://localhost:4000")
 SITE_URL = os.environ.get("SITE_URL", "https://higiangcoder.github.io")
 # Lịch sử publish (mới nhất ở đầu), mỗi mục: id/title/ok/time/outputs
 PUBLISH_RESULTS: list[dict] = []
+
+# BlogLint là package offline trong repo. Admin chỉ dùng rule-based diagnostics,
+# không gọi teacher/cloud từ giao diện quản trị.
+BLOGLINT_SRC = REPO_DIR / "bloglint" / "src"
+if BLOGLINT_SRC.exists() and str(BLOGLINT_SRC) not in sys.path:
+    sys.path.insert(0, str(BLOGLINT_SRC))
+
+try:  # pragma: no cover - phụ thuộc môi trường mount của Docker
+    from bloglint.diagnostics import analyze_body as bloglint_analyze_body
+    from bloglint.diagnostics import summarize as bloglint_summarize
+except Exception:  # pragma: no cover
+    bloglint_analyze_body = None
+    bloglint_summarize = None
 
 EDITABLE_PAGES = {
     "gioi-thieu.md": "Trang giới thiệu",
@@ -592,6 +606,18 @@ def index(request: Request):
             "repo_dir": str(REPO_DIR),
         },
     )
+
+
+@app.post("/bloglint/analyze")
+def bloglint_analyze(content: str = Form(""), title: str = Form("")):
+    """Chẩn đoán offline cho trang sửa bài. Không gọi mạng/teacher."""
+    if bloglint_analyze_body is None or bloglint_summarize is None:
+        raise HTTPException(503, "BlogLint chưa được cài trong admin.")
+    issues = bloglint_analyze_body(content, title=title)
+    return {
+        "issues": [issue.to_dict() for issue in issues],
+        "summary": bloglint_summarize(issues),
+    }
 
 
 @app.get("/posts/new", response_class=HTMLResponse)

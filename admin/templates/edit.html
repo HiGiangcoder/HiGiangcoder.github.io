@@ -186,6 +186,23 @@
 
   <aside class="edit-side">
     {% if mode == 'edit' %}
+    <section class="panel stack bloglint-panel" data-bloglint-panel>
+      <div class="panel-head-row">
+        <h2>BlogLint</h2>
+        <button type="button" class="btn" id="bloglint-run">Phân tích</button>
+      </div>
+      <p class="muted small">
+        Chẩn đoán offline trên nội dung đang soạn: câu/đoạn quá dài, từ đệm, sáo ngữ,
+        lặp từ, lỗi dấu câu. Không gửi bài lên mạng.
+      </p>
+      <label class="bloglint-toggle">
+        <input type="checkbox" id="bloglint-show-info">
+        <span>Hiện gợi ý mức info</span>
+      </label>
+      <div class="bloglint-summary" id="bloglint-summary">Chưa phân tích.</div>
+      <ul class="bloglint-issues" id="bloglint-issues"></ul>
+    </section>
+
     <section class="panel stack asset-panel">
       <div>
         <h2>Tài nguyên của bài</h2>
@@ -816,6 +833,143 @@
         saveNow(true);
       }
     });
+  })();
+</script>
+
+<script>
+  (function () {
+    var panel = document.querySelector("[data-bloglint-panel]");
+    if (!panel) return;
+
+    var content = document.getElementById("content");
+    var titleInput = document.querySelector('input[name="title"]');
+    var summary = document.getElementById("bloglint-summary");
+    var list = document.getElementById("bloglint-issues");
+    var runButton = document.getElementById("bloglint-run");
+    var showInfo = document.getElementById("bloglint-show-info");
+    var running = false;
+    var lastPayload = null;
+
+    function setSummary(text, state) {
+      summary.textContent = text;
+      summary.className = "bloglint-summary" + (state ? " " + state : "");
+    }
+
+    function goToSpan(start, end) {
+      if (!content) return;
+      content.focus();
+      content.setSelectionRange(start, end);
+      var ratio = start / Math.max(content.value.length, 1);
+      content.scrollTop = Math.max(0, ratio * content.scrollHeight - content.clientHeight / 2);
+    }
+
+    function render(payload) {
+      lastPayload = payload;
+      var issues = payload.issues || [];
+      var summaryData = payload.summary || {};
+      var total = summaryData.total || 0;
+      var bySeverity = summaryData.by_severity || {};
+      var detail = total === 0
+        ? ""
+        : " (" + (bySeverity.error || 0) + " lỗi, " +
+          (bySeverity.warning || 0) + " cảnh báo, " +
+          (bySeverity.info || 0) + " info)";
+      setSummary(
+        total === 0 ? "Không phát hiện vấn đề rõ ràng." : total + " vấn đề" + detail,
+        total === 0 ? "ok" : ""
+      );
+
+      var visible = issues.filter(function (issue) {
+        return (showInfo && showInfo.checked) || issue.severity !== "info";
+      });
+      var hidden = issues.length - visible.length;
+
+      list.innerHTML = "";
+      if (hidden > 0) {
+        var note = document.createElement("li");
+        note.className = "bloglint-hidden-note";
+        note.textContent = "Đang ẩn " + hidden + " gợi ý info. Bật “Hiện gợi ý mức info” để xem.";
+        list.appendChild(note);
+      }
+
+      visible.forEach(function (issue) {
+        var item = document.createElement("li");
+        item.className = "bloglint-issue severity-" + issue.severity;
+
+        var head = document.createElement("div");
+        head.className = "bloglint-issue-head";
+        var badge = document.createElement("span");
+        badge.className = "bloglint-badge";
+        badge.textContent = issue.severity;
+        var category = document.createElement("span");
+        category.className = "bloglint-category";
+        category.textContent = issue.category;
+        head.appendChild(badge);
+        head.appendChild(category);
+
+        var message = document.createElement("p");
+        message.className = "bloglint-message";
+        message.textContent = issue.message;
+
+        item.appendChild(head);
+        item.appendChild(message);
+
+        if (issue.suggestion) {
+          var suggestion = document.createElement("p");
+          suggestion.className = "bloglint-suggestion";
+          suggestion.textContent = issue.suggestion;
+          item.appendChild(suggestion);
+        }
+
+        if (issue.span) {
+          var jump = document.createElement("button");
+          jump.type = "button";
+          jump.className = "btn bloglint-jump";
+          jump.textContent = "Tới vị trí";
+          jump.addEventListener("click", function () {
+            goToSpan(issue.span.start, issue.span.end);
+          });
+          item.appendChild(jump);
+        }
+
+        list.appendChild(item);
+      });
+    }
+
+    function run() {
+      if (running || !content) return;
+      running = true;
+      if (runButton) runButton.disabled = true;
+      setSummary("Đang phân tích...", "pending");
+
+      var params = new URLSearchParams();
+      params.set("content", content.value);
+      params.set("title", titleInput ? titleInput.value : "");
+
+      fetch("/bloglint/analyze", { method: "POST", body: params })
+        .then(function (response) {
+          return response.json().then(function (body) {
+            if (!response.ok) throw new Error(body.detail || "Phân tích thất bại.");
+            return body;
+          });
+        })
+        .then(render)
+        .catch(function (error) {
+          setSummary(error.message || "Phân tích thất bại.", "error");
+        })
+        .finally(function () {
+          running = false;
+          if (runButton) runButton.disabled = false;
+        });
+    }
+
+    if (runButton) runButton.addEventListener("click", run);
+    if (showInfo) {
+      showInfo.addEventListener("change", function () {
+        if (lastPayload) render(lastPayload);
+      });
+    }
+    if (content && content.value.trim()) run();
   })();
 </script>
 {% endblock %}

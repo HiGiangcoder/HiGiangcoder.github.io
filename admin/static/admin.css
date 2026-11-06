@@ -792,6 +792,92 @@ input[type="checkbox"] {
   font-size: 0.8rem;
 }
 
+/* BlogLint panel */
+.bloglint-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  color: var(--muted, #6b625a);
+}
+
+.bloglint-hidden-note {
+  font-size: 0.82rem;
+  color: var(--muted, #6b625a);
+  font-style: italic;
+}
+
+.bloglint-summary {
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-2, #f4efe9);
+  color: var(--muted, #6b625a);
+  font-size: 0.88rem;
+}
+
+.bloglint-summary.ok {
+  background: #e8f5ec;
+  color: #256b3a;
+}
+
+.bloglint-summary.pending {
+  background: #fdf1dc;
+  color: #8a5a12;
+}
+
+.bloglint-summary.error {
+  background: #fbe7e5;
+  color: #9b2c23;
+}
+
+.bloglint-issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.bloglint-issue {
+  border-left: 3px solid #b9aa9c;
+  background: #fffdfa;
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+}
+
+.bloglint-issue.severity-warning { border-left-color: #c98a2b; }
+.bloglint-issue.severity-error { border-left-color: #b93a2f; }
+.bloglint-issue.severity-info { border-left-color: #7a8fa6; }
+
+.bloglint-issue-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.2rem;
+}
+
+.bloglint-badge {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--muted, #6b625a);
+}
+
+.bloglint-category {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8a5a44;
+}
+
+.bloglint-message { margin: 0; font-size: 0.9rem; }
+.bloglint-suggestion { margin: 0.2rem 0 0; font-size: 0.84rem; color: var(--muted, #6b625a); }
+
+.bloglint-jump {
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.78rem;
+}
+
 @media (max-width: 1100px) {
   .edit-layout,
   .edit-layout.assets-left {
