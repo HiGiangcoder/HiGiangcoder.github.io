@@ -95,7 +95,7 @@ text.py: front matter + paragraph/sentence + offset
 
 ### Kết quả kiểm thử thực tế (2026-11-06)
 
-- `PYTHONPATH=src python3 -m unittest discover -s tests -v` → **100 test, OK**.
+- `PYTHONPATH=src python3 -m unittest discover -s tests -v` → **112 test, OK**.
 - `python3 -m bloglint doctor` → chạy được, báo network tắt mặc định, API key chưa cấu hình.
 - `python3 -m bloglint analyze fixtures/sample_post.md` → 2 issue (cliche, filler_word),
   offset trỏ đúng vào body.
@@ -109,8 +109,13 @@ text.py: front matter + paragraph/sentence + offset
   local proxy. Dataset pilot: **10 record, 65 issue, 0 trùng, mọi span khớp body**.
   Phân bố: clarity 14, coherence 4, factual 9, grammar 14, spelling 2, style 22.
 - `backfill-documents` → **10 document**, mỗi hash khớp annotation.
-- `export-sft` → **8 train / 2 val**, hash train và val rời nhau.
-- Chưa chạy fine-tune; chưa có checkpoint hay metrics train nào.
+- `audit-dataset` → **0 blocking**, 14 warning; 56/65 issue thuộc category train.
+  Review sheet: `data/review.md`.
+- `export-sft` → **8 train / 4 val** (v4, chunk 6000), 56 issue trong phạm vi, hash train và val rời nhau.
+- Train pilot trên `master.iec` (RTX 4060 8 GB, QLoRA 4-bit, 1 epoch): adapter lưu tại
+  `data/train-runs/pilot-001`. Eval trên 2 bài held-out: **0/4 JSON hợp lệ, F1 = 0.0000**.
+  Model chưa usable; cần thêm dữ liệu và epoch.
+- Chưa đạt G2/G3; không có checkpoint chất lượng để tích hợp admin.
 
 ## 5. Khoảng trống trước khi train
 
@@ -153,6 +158,7 @@ Các nhóm test:
 - `test_diagnostics.py`
 - `test_teacher.py`
 - `test_dataset.py`
+- `test_audit.py`
 - `test_sft.py`
 - `test_evaluation.py`
 - `test_cli.py`

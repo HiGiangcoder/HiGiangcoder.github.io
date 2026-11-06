@@ -1,0 +1,22 @@
+{
+  "model_id": "Qwen/Qwen3-VL-2B-Instruct",
+  "train_file": "data/sft-v4/train.jsonl",
+  "val_file": "data/sft-v4/val.jsonl",
+  "output_dir": "data/train-runs/pilot-001",
+  "max_seq_length": 4096,
+  "num_train_epochs": 1.0,
+  "per_device_train_batch_size": 1,
+  "gradient_accumulation_steps": 8,
+  "learning_rate": 0.0002,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "optim": "paged_adamw_8bit",
+  "bf16": true,
+  "gradient_checkpointing": true,
+  "eval_steps": 4,
+  "save_steps": 8,
+  "logging_steps": 1,
+  "seed": 42,
+  "target_modules": "all-linear"
+}

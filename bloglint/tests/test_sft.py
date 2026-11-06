@@ -5,7 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bloglint.dataset import append_documents, append_records, make_document_record, make_record
+from bloglint.dataset import (
+    append_documents,
+    append_records,
+    make_document_record,
+    make_record,
+    read_records,
+)
 from bloglint.schema import Issue, Span
 from bloglint.sft import SFTError, export_sft
 from bloglint.text import load_document
@@ -119,6 +125,39 @@ class ExportTests(unittest.TestCase):
                     temp_path / "sft",
                     model="model-b",
                 )
+
+    def test_factual_is_excluded_from_default_export(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            temp_path = Path(temp)
+            annotations, documents = prepare(temp_path, [("bai.md", "Nội dung bài.")])
+            record = read_records(annotations)[0]
+            record.issues = [
+                Issue(
+                    category="factual",
+                    severity="error",
+                    message="kiểm chứng ngoài",
+                    span=Span(0, 3, "Nội"),
+                )
+            ]
+            annotations.unlink()
+            append_records(annotations, [record])
+
+            with self.assertRaises(SFTError):
+                export_sft(annotations, documents, temp_path / "sft-default")
+
+            result = export_sft(
+                annotations,
+                documents,
+                temp_path / "sft-all",
+                val_ratio=0.0,
+                categories={"factual"},
+            )
+            self.assertEqual(result.train_examples, 1)
+            self.assertEqual(result.skipped_no_in_scope_issues, 0)
+            row = json.loads(
+                (temp_path / "sft-all" / "train.jsonl").read_text(encoding="utf-8")
+            )
+            self.assertEqual(row["messages"][1]["content"].count("factual"), 1)
 
 
 if __name__ == "__main__":

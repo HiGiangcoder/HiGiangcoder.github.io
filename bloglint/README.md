@@ -14,7 +14,8 @@ Trợ lý chẩn đoán bài viết tiếng Việt cho blog Jekyll trong repo n�
 | M0 — schema, parser, rule engine, CLI | Hoàn thành |
 | M1 — teacher client, dataset, benchmark, admin panel | Hoàn thành |
 | Pilot annotation 9 bài blog | Hoàn thành: 10 record, 65 issue |
-| Export SFT train/val | Hoàn thành pilot: 8 train / 2 val |
+| Audit dataset | Hoàn thành: 0 blocking, 14 warning |
+| Export SFT train/val | Hoàn thành pilot: 8 train / 2 val, 56 issue trong phạm vi |
 | Generate dataset quy mô lớn | Chưa làm (ngoài phạm vi) |
 | Fine-tune Student | Chưa làm; chưa có checkpoint hay kết quả train |
 
@@ -50,8 +51,11 @@ PYTHONPATH=src python3 -m bloglint annotate ../_posts/bai.md \
 # Sao lưu body bài đã annotate vào documents.jsonl (append-only)
 PYTHONPATH=src python3 -m bloglint backfill-documents
 
-# Export SFT train/val; từ chối ghi đè nếu output đã tồn tại
-PYTHONPATH=src python3 -m bloglint export-sft --output-dir data/sft
+# Audit span/trùng/quote; ghi review sheet vào data/review.md
+PYTHONPATH=src python3 -m bloglint audit-dataset --write-review
+
+# Export SFT train/val (mặc định chỉ category train, loại factual)
+PYTHONPATH=src python3 -m bloglint export-sft --output-dir data/sft-v2
 
 # Đánh giá trên golden fixture nhỏ
 PYTHONPATH=src python3 -m bloglint benchmark
@@ -79,9 +83,10 @@ bloglint/
 │   ├── diagnostics.py   # rule tiếng Việt, deterministic
 │   ├── teacher.py       # prompt + Ollama client có guard
 │   ├── dataset.py       # JSONL append-only + document corpus + manifest
+│   ├── audit.py         # audit dataset + review sheet
 │   ├── sft.py           # export train/val SFT, chưa train
 │   ├── evaluation.py    # precision/recall/F1 trên golden fixture
-│   └── cli.py           # doctor/analyze/annotate/benchmark/dataset-stats/export-sft
+│   └── cli.py           # doctor/analyze/annotate/audit/export-sft/benchmark
 ├── tests/               # unittest
 ├── fixtures/            # bài mẫu + golden smoke fixture
 ├── docs/                # kế hoạch và quyết định
@@ -134,6 +139,11 @@ theo `content_sha256`:
 Mỗi example có `messages` (user = prompt teacher, assistant = JSON `issues` với
 `quote`), split theo `content_sha256` để train/val không rò rỉ bài.
 
+**Phạm vi SFT**: `clarity`, `coherence`, `grammar`, `spelling`, `style`. Category
+`factual` bị loại khỏi target train vì model 2B không đủ tin cậy để kiểm chứng kiến
+thức bên ngoài; các issue factual vẫn được giữ trong dataset gốc để tham khảo.
+Kế hoạch chi tiết ở [`docs/final_product_plan.md`](docs/final_product_plan.md).
+
 ## Benchmark
 
 `fixtures/golden.jsonl` là **smoke fixture nhỏ do con người viết**, dùng để kiểm tra
@@ -160,6 +170,7 @@ Overall: P=1.0000 R=1.0000 F1=1.0000 (TP=6, FP=0, FN=0)
   hoa thường; có fuzzy match thận trọng cho paraphrase gần đúng. Quote lệch quá xa
   vẫn bị từ chối.
 - Dataset pilot còn nhỏ (10 bài); chưa đủ để train có ý nghĩa.
-- Đã export SFT pilot 8 train / 2 val, nhưng **chưa fine-tune, chưa có checkpoint,
-  chưa cài `transformers`/`peft`/`trl`**.
+- Đã train pilot 1 epoch trên 8 example (QLoRA 4-bit, RTX 4060 8 GB). Adapter lưu tại
+  `data/train-runs/pilot-001`, nhưng eval trên 2 bài held-out cho **0/4 JSON hợp lệ,
+  F1 = 0.0000**. Model chưa usable; chưa tích hợp admin.
 - GPU local 4 GB VRAM không phù hợp để train Qwen3-VL-2B; cần QLoRA/Colab/GPU đủ mạnh.
