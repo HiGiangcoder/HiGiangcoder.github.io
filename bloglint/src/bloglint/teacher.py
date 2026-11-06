@@ -28,7 +28,7 @@ Trả về DUY NHẤT một JSON object theo cấu trúc:
 {
   "issues": [
     {
-      "category": "clarity | coherence | grammar | spelling | style | factual | punctuation | other",
+      "category": "clarity | coherence | grammar | spelling | style | factual | punctuation | spacing | other",
       "severity": "info | warning | error",
       "message": "mô tả ngắn gọn bằng tiếng Việt",
       "suggestion": "gợi ý sửa cụ thể",
@@ -202,9 +202,9 @@ def issues_from_payload(payload: dict, body: str) -> list[Issue]:
         category = str(item.get("category", "")).strip()
         severity = str(item.get("severity", "")).strip()
         if category not in CATEGORIES:
-            raise TeacherResponseError(f"issues[{index}] có category không hợp lệ: {category!r}")
+            category = "other"
         if severity not in SEVERITIES:
-            raise TeacherResponseError(f"issues[{index}] có severity không hợp lệ: {severity!r}")
+            severity = "warning"
 
         message = str(item.get("message", "")).strip()
         if not message:

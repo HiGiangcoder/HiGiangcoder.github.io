@@ -200,7 +200,7 @@ class ParsingTests(unittest.TestCase):
         with self.assertRaises(TeacherResponseError):
             issues_from_payload(payload, BODY)
 
-    def test_invalid_category_is_rejected(self) -> None:
+    def test_invalid_category_maps_to_other(self) -> None:
         payload = {
             "issues": [
                 {
@@ -211,10 +211,10 @@ class ParsingTests(unittest.TestCase):
                 }
             ]
         }
-        with self.assertRaises(TeacherResponseError):
-            issues_from_payload(payload, BODY)
+        issues = issues_from_payload(payload, BODY)
+        self.assertEqual(issues[0].category, "other")
 
-    def test_invalid_severity_is_rejected(self) -> None:
+    def test_invalid_severity_maps_to_warning(self) -> None:
         payload = {
             "issues": [
                 {
@@ -225,8 +225,8 @@ class ParsingTests(unittest.TestCase):
                 }
             ]
         }
-        with self.assertRaises(TeacherResponseError):
-            issues_from_payload(payload, BODY)
+        issues = issues_from_payload(payload, BODY)
+        self.assertEqual(issues[0].severity, "warning")
 
 
 class TransportTests(unittest.TestCase):
