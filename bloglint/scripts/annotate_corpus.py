@@ -47,6 +47,7 @@ def main() -> int:
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--retries", type=int, default=2, help="Số lần thử lại khi teacher lỗi")
+    parser.add_argument("--sleep", type=float, default=1.0, help="Delay giữa các bài")
     args = parser.parse_args()
 
     settings = Settings.from_env(None)
