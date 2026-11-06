@@ -365,6 +365,7 @@ def cmd_export_sft(args: argparse.Namespace) -> int:
             model=args.model,
             categories=categories,
             max_chars=args.max_chars,
+            dedup_issues=not args.no_dedup_issues,
         )
     except SFTError as exc:
         print(f"Export lỗi: {exc}", file=sys.stderr)
@@ -591,6 +592,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=6000,
         help="Chia bài dài thành chunk tối đa N ký tự; 0 = không chia.",
+    )
+    export.add_argument(
+        "--no-dedup-issues",
+        action="store_true",
+        help="Không loại issue trùng cùng category+span.",
     )
     export.add_argument("--json", action="store_true")
     export.set_defaults(func=cmd_export_sft)

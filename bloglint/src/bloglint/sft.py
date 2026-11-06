@@ -31,6 +31,53 @@ class ExportResult:
     info: dict
 
 
+def _assistant_payload(
+    record: AnnotationRecord,
+    categories: frozenset[str] | set[str] | None = None,
+    issues: list | None = None,
+) -> str:
+    """Target đúng schema prompt yêu cầu: dùng ``quote`` thay vì offset nội bộ."""
+    allowed = TRAIN_CATEGORIES if categories is None else frozenset(categories)
+    selected = record.issues if issues is None else issues
+    payload_issues = []
+    for issue in selected:
+        if issue.category not in allowed:
+            continue
+        item = {
+            "category": issue.category,
+            "severity": issue.severity,
+            "message": issue.message,
+            "suggestion": issue.suggestion,
+        }
+        if issue.span is not None:
+            item["quote"] = issue.span.text
+        payload_issues.append(item)
+    return json.dumps({"issues": payload_issues}, ensure_ascii=False, sort_keys=True)
+
+
+def _in_scope_issues(
+    record: AnnotationRecord,
+    allowed: frozenset[str] | set[str],
+    dedup_issues: bool,
+) -> list:
+    selected = [issue for issue in record.issues if issue.category in allowed]
+    if not dedup_issues:
+        return selected
+    seen: set[tuple[str, int | None, int | None]] = set()
+    result = []
+    for issue in selected:
+        key = (
+            issue.category,
+            issue.span.start if issue.span else None,
+            issue.span.end if issue.span else None,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(issue)
+    return result
+
+
 def _chunk_body(body: str, max_chars: int) -> list[tuple[int, int]]:
     """Chia body theo đoạn, không vượt quá ``max_chars`` nếu có thể."""
     if max_chars <= 0 or len(body) <= max_chars:
@@ -75,51 +122,40 @@ def _chunks_with_issues(
     body: str,
     max_chars: int,
     categories: frozenset[str] | set[str],
+    dedup_issues: bool = True,
 ) -> list[tuple[int, int, int, list]]:
     """Gán mỗi issue vào chunk chứa điểm bắt đầu của span."""
     chunks = _chunk_body(body, max_chars)
     if not chunks:
         return []
 
+    seen_keys: set[tuple[str, int | None, int | None]] = set()
+    deduped: list = []
+    for issue in record.issues:
+        if issue.category not in categories:
+            continue
+        key = (
+            issue.category,
+            issue.span.start if issue.span else None,
+            issue.span.end if issue.span else None,
+        )
+        if dedup_issues and key in seen_keys:
+            continue
+        seen_keys.add(key)
+        deduped.append(issue)
+
     assigned: list[tuple[int, int, int, list]] = []
     for index, (start, end) in enumerate(chunks):
         issues = [
             issue
-            for issue in record.issues
-            if issue.category in categories
-            and issue.span is not None
-            and start <= issue.span.start < end
+            for issue in deduped
+            if issue.span is not None and start <= issue.span.start < end
         ]
         if not issues:
             continue
-        # Nếu issue vượt quá cuối chunk, mở rộng chunk để quote còn nguyên.
         end = min(len(body), max(end, max(issue.span.end for issue in issues)))
         assigned.append((index, start, end, issues))
     return assigned
-
-
-def _assistant_payload(
-    record: AnnotationRecord,
-    categories: frozenset[str] | set[str] | None = None,
-    issues: list | None = None,
-) -> str:
-    """Target đúng schema prompt yêu cầu: dùng ``quote`` thay vì offset nội bộ."""
-    allowed = TRAIN_CATEGORIES if categories is None else frozenset(categories)
-    selected = record.issues if issues is None else issues
-    payload_issues = []
-    for issue in selected:
-        if issue.category not in allowed:
-            continue
-        item = {
-            "category": issue.category,
-            "severity": issue.severity,
-            "message": issue.message,
-            "suggestion": issue.suggestion,
-        }
-        if issue.span is not None:
-            item["quote"] = issue.span.text
-        payload_issues.append(item)
-    return json.dumps({"issues": payload_issues}, ensure_ascii=False, sort_keys=True)
 
 
 def example_from_record(
@@ -174,6 +210,7 @@ def export_sft(
     model: str | None = None,
     categories: frozenset[str] | set[str] | None = None,
     max_chars: int = 6000,
+    dedup_issues: bool = True,
 ) -> ExportResult:
     if not 0.0 <= val_ratio < 1.0:
         raise SFTError("val_ratio phải trong khoảng [0, 1).")
@@ -212,7 +249,7 @@ def export_sft(
             missing += 1
             continue
         for chunk_index, start, end, issues in _chunks_with_issues(
-            record, document.body, max_chars, allowed
+            record, document.body, max_chars, allowed, dedup_issues=dedup_issues
         ):
             chunks += 1
             examples.append(
@@ -277,6 +314,7 @@ def export_sft(
         "model": model,
         "categories": sorted(allowed),
         "max_chars": max_chars,
+        "dedup_issues": dedup_issues,
         "train_examples": len(train),
         "val_examples": len(val),
         "chunks_with_issues": chunks,
