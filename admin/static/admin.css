@@ -793,6 +793,17 @@ input[type="checkbox"] {
 }
 
 /* BlogLint panel */
+.bloglint-body { display: grid; gap: 0.8rem; }
+.bloglint-body[hidden] { display: none; }
+
+.bloglint-off-note { margin: 0; }
+
+#bloglint-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .bloglint-toggle {
   display: flex;
   align-items: center;

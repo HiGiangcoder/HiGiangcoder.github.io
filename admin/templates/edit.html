@@ -190,37 +190,47 @@
       <div class="panel-head-row">
         <h2>BlogLint</h2>
         <div class="form-actions">
-          <button type="button" class="btn" id="bloglint-run">Phân tích offline</button>
-          <button type="button" class="btn primary" id="bloglint-ai-run">AI review (Ollama)</button>
+          <button type="button" class="btn" id="bloglint-toggle" aria-pressed="false" aria-controls="bloglint-body">
+            Bật BlogLint
+          </button>
+          <button type="button" class="btn" id="bloglint-run" disabled>Phân tích offline</button>
+          <button type="button" class="btn primary" id="bloglint-ai-run" disabled>AI review (Ollama)</button>
         </div>
       </div>
-      <p class="muted small">
-        BlogLint chỉ chạy khi bạn bấm nút, không tự động phân tích.
-        AI review gọi Ollama theo cài đặt trong <a href="/settings">Cài đặt</a>.
-      </p>
-      <label class="bloglint-toggle">
-        <input type="checkbox" id="bloglint-show-info">
-        <span>Hiện gợi ý mức info</span>
-      </label>
-      <div class="bloglint-summary" id="bloglint-summary">Chưa phân tích.</div>
-      <div class="bloglint-toolbar">
-        <span class="muted small">Lỗi được ưu tiên hiển thị trước cảnh báo.</span>
-        <button type="button" class="btn bloglint-restore" id="bloglint-restore" hidden>
-          Khôi phục đã bỏ qua (0)
-        </button>
-      </div>
-      <ul class="bloglint-issues" id="bloglint-issues"></ul>
 
-      <dialog class="bloglint-guide-dialog" id="bloglint-guide-dialog">
-        <div class="bloglint-guide-head">
-          <div>
-            <span class="muted small">Hướng dẫn viết blog</span>
-            <h3 id="bloglint-guide-title">Chi tiết lỗi</h3>
-          </div>
-          <button type="button" class="btn" id="bloglint-guide-close">Đóng</button>
+      <p class="muted small bloglint-off-note" id="bloglint-off-note">
+        BlogLint đang tắt. Bấm “Bật BlogLint” để sử dụng.
+      </p>
+
+      <div class="bloglint-body" id="bloglint-body" hidden>
+        <p class="muted small">
+          BlogLint chỉ chạy khi bạn bấm nút, không tự động phân tích.
+          AI review gọi Ollama theo cài đặt trong <a href="/settings">Cài đặt</a>.
+        </p>
+        <label class="bloglint-toggle">
+          <input type="checkbox" id="bloglint-show-info">
+          <span>Hiện gợi ý mức info</span>
+        </label>
+        <div class="bloglint-summary" id="bloglint-summary">Chưa phân tích.</div>
+        <div class="bloglint-toolbar">
+          <span class="muted small">Lỗi được ưu tiên hiển thị trước cảnh báo.</span>
+          <button type="button" class="btn bloglint-restore" id="bloglint-restore" hidden>
+            Khôi phục đã bỏ qua (0)
+          </button>
         </div>
-        <div class="bloglint-guide-body" id="bloglint-guide-body"></div>
-      </dialog>
+        <ul class="bloglint-issues" id="bloglint-issues"></ul>
+
+        <dialog class="bloglint-guide-dialog" id="bloglint-guide-dialog">
+          <div class="bloglint-guide-head">
+            <div>
+              <span class="muted small">Hướng dẫn viết blog</span>
+              <h3 id="bloglint-guide-title">Chi tiết lỗi</h3>
+            </div>
+            <button type="button" class="btn" id="bloglint-guide-close">Đóng</button>
+          </div>
+          <div class="bloglint-guide-body" id="bloglint-guide-body"></div>
+        </dialog>
+      </div>
     </section>
 
     <section class="panel stack asset-panel">
@@ -873,11 +883,45 @@
     var guideTitle = document.getElementById("bloglint-guide-title");
     var guideBody = document.getElementById("bloglint-guide-body");
     var guideClose = document.getElementById("bloglint-guide-close");
+    var toggleButton = document.getElementById("bloglint-toggle");
+    var bloglintBody = document.getElementById("bloglint-body");
+    var offNote = document.getElementById("bloglint-off-note");
     var running = false;
     var lastPayload = null;
 
+    var ENABLED_KEY = "bloglint:enabled";
     var STORAGE_KEY = "bloglint:dismissed:" + window.location.pathname;
     var dismissed = loadDismissed();
+    var enabled = loadEnabled();
+
+    function loadEnabled() {
+      try {
+        return window.localStorage.getItem(ENABLED_KEY) === "1";
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function saveEnabled() {
+      try {
+        window.localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
+      } catch (error) {
+        /* localStorage có thể bị chặn; bỏ qua. */
+      }
+    }
+
+    function applyEnabled() {
+      if (bloglintBody) bloglintBody.hidden = !enabled;
+      if (offNote) offNote.hidden = enabled;
+      if (toggleButton) {
+        toggleButton.textContent = enabled ? "Tắt BlogLint" : "Bật BlogLint";
+        toggleButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+        toggleButton.classList.toggle("active", enabled);
+      }
+      if (runButton) runButton.disabled = !enabled || running;
+      if (aiButton) aiButton.disabled = !enabled || running;
+      if (!enabled) closeGuide();
+    }
 
     function loadDismissed() {
       try {
@@ -1164,10 +1208,9 @@
     }
 
     function request(endpoint, label) {
-      if (running || !content) return;
+      if (running || !content || !enabled) return;
       running = true;
-      if (runButton) runButton.disabled = true;
-      if (aiButton) aiButton.disabled = true;
+      applyEnabled();
       setSummary(label, "pending");
 
       var params = new URLSearchParams();
@@ -1187,8 +1230,7 @@
         })
         .finally(function () {
           running = false;
-          if (runButton) runButton.disabled = false;
-          if (aiButton) aiButton.disabled = false;
+          applyEnabled();
         });
     }
 
@@ -1218,6 +1260,15 @@
         if (event.target === guideDialog) closeGuide();
       });
     }
+    if (toggleButton) {
+      toggleButton.addEventListener("click", function () {
+        enabled = !enabled;
+        saveEnabled();
+        applyEnabled();
+      });
+    }
+
+    applyEnabled();
   })();
 </script>
 {% endblock %}
