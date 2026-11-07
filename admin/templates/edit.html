@@ -204,18 +204,32 @@
 
       <div class="bloglint-body" id="bloglint-body" hidden>
         <p class="muted small">
-          BlogLint chỉ chạy khi bạn bấm nút, không tự động phân tích.
-          AI review gọi Ollama theo cài đặt trong <a href="/settings">Cài đặt</a>.
+          BlogLint chỉ chạy khi bạn bấm nút. AI review gọi Ollama theo cài đặt trong
+          <a href="/settings">Cài đặt</a>.
         </p>
-        <label class="bloglint-toggle">
-          <input type="checkbox" id="bloglint-show-info">
-          <span>Hiện gợi ý mức info</span>
-        </label>
-        <div class="bloglint-summary" id="bloglint-summary">Chưa phân tích.</div>
+
         <div class="bloglint-toolbar">
-          <span class="muted small">Lỗi được ưu tiên hiển thị trước cảnh báo.</span>
+          <label class="bloglint-filter">
+            <span>Hiển thị</span>
+            <select id="bloglint-filter">
+              <option value="important" selected>Lỗi &amp; cảnh báo</option>
+              <option value="error">Chỉ lỗi</option>
+              <option value="warning">Chỉ cảnh báo</option>
+              <option value="info">Chỉ gợi ý</option>
+              <option value="all">Tất cả</option>
+            </select>
+          </label>
           <button type="button" class="btn bloglint-restore" id="bloglint-restore" hidden>
             Khôi phục đã bỏ qua (0)
+          </button>
+        </div>
+
+        <div class="bloglint-summary" id="bloglint-summary" aria-live="polite">Chưa phân tích.</div>
+        <div class="bloglint-meta" id="bloglint-meta" hidden></div>
+        <div class="bloglint-stale" id="bloglint-stale" hidden>
+          <span>Nội dung đã thay đổi — kết quả có thể không còn chính xác.</span>
+          <button type="button" class="btn bloglint-stale-rerun" id="bloglint-stale-rerun">
+            Phân tích lại
           </button>
         </div>
         <ul class="bloglint-issues" id="bloglint-issues"></ul>
@@ -877,7 +891,10 @@
     var list = document.getElementById("bloglint-issues");
     var runButton = document.getElementById("bloglint-run");
     var aiButton = document.getElementById("bloglint-ai-run");
-    var showInfo = document.getElementById("bloglint-show-info");
+    var filterSelect = document.getElementById("bloglint-filter");
+    var staleNote = document.getElementById("bloglint-stale");
+    var staleRerun = document.getElementById("bloglint-stale-rerun");
+    var metaNote = document.getElementById("bloglint-meta");
     var restoreButton = document.getElementById("bloglint-restore");
     var guideDialog = document.getElementById("bloglint-guide-dialog");
     var guideTitle = document.getElementById("bloglint-guide-title");
@@ -888,11 +905,40 @@
     var offNote = document.getElementById("bloglint-off-note");
     var running = false;
     var lastPayload = null;
+    var analyzedContent = null;
+    var analyzedTitle = null;
+    var lastEndpoint = "/bloglint/analyze";
+    var lastLabel = "Đang phân tích...";
+    var statusTimer = null;
+    var statusBase = "";
+    var statusStarted = 0;
 
     var ENABLED_KEY = "bloglint:enabled";
+    var FILTER_KEY = "bloglint:filter";
     var STORAGE_KEY = "bloglint:dismissed:" + window.location.pathname;
     var dismissed = loadDismissed();
     var enabled = loadEnabled();
+    var filter = loadFilter();
+
+    var SEVERITY_LABEL = { error: "Lỗi", warning: "Cảnh báo", info: "Gợi ý" };
+    var CATEGORY_LABEL = {
+      sentence_too_long: "Câu quá dài",
+      paragraph_too_long: "Đoạn quá dài",
+      filler_word: "Từ đệm",
+      cliche: "Sáo ngữ",
+      repetition: "Lặp từ",
+      punctuation: "Dấu câu",
+      passive_overuse: "Câu bị động",
+      structure: "Cấu trúc",
+      clarity: "Rõ ràng",
+      coherence: "Mạch lạc",
+      grammar: "Ngữ pháp",
+      spelling: "Chính tả",
+      style: "Phong cách",
+      factual: "Thông tin",
+      spacing: "Khoảng trắng",
+      other: "Khác"
+    };
 
     function loadEnabled() {
       try {
@@ -908,6 +954,54 @@
       } catch (error) {
         /* localStorage có thể bị chặn; bỏ qua. */
       }
+    }
+
+    function loadFilter() {
+      try {
+        var value = window.localStorage.getItem(FILTER_KEY) || "important";
+        return ["important", "error", "warning", "info", "all"].indexOf(value) !== -1
+          ? value
+          : "important";
+      } catch (error) {
+        return "important";
+      }
+    }
+
+    function saveFilter() {
+      try {
+        window.localStorage.setItem(FILTER_KEY, filter);
+      } catch (error) {
+        /* localStorage có thể bị chặn; bỏ qua. */
+      }
+    }
+
+    function startStatus(label) {
+      stopStatus();
+      statusBase = label;
+      statusStarted = Date.now();
+      setSummary(label, "pending");
+      statusTimer = window.setInterval(function () {
+        var seconds = Math.round((Date.now() - statusStarted) / 1000);
+        setSummary(statusBase + " " + seconds + "s", "pending");
+      }, 1000);
+    }
+
+    function stopStatus() {
+      if (statusTimer) {
+        window.clearInterval(statusTimer);
+        statusTimer = null;
+      }
+    }
+
+    function updateStale() {
+      if (!staleNote) return;
+      var currentTitle = titleInput ? titleInput.value : "";
+      var stale = Boolean(
+        lastPayload &&
+        analyzedContent !== null &&
+        ((content && content.value !== analyzedContent) || currentTitle !== analyzedTitle)
+      );
+      staleNote.hidden = !stale;
     }
 
     function applyEnabled() {
@@ -1088,6 +1182,65 @@
       }
     }
 
+    function matchesFilter(issue) {
+      if (filter === "all") return true;
+      if (filter === "important") {
+        return issue.severity === "error" || issue.severity === "warning";
+      }
+      return issue.severity === filter;
+    }
+
+    function categoryLabel(category) {
+      return CATEGORY_LABEL[category] || category || "Khác";
+    }
+
+    function updateFilterOptions(bySeverity, total) {
+      if (!filterSelect || filterSelect.options.length < 5) return;
+      var error = bySeverity.error || 0;
+      var warning = bySeverity.warning || 0;
+      var info = bySeverity.info || 0;
+      filterSelect.options[0].textContent = "Lỗi & cảnh báo (" + (error + warning) + ")";
+      filterSelect.options[1].textContent = "Chỉ lỗi (" + error + ")";
+      filterSelect.options[2].textContent = "Chỉ cảnh báo (" + warning + ")";
+      filterSelect.options[3].textContent = "Chỉ gợi ý (" + info + ")";
+      filterSelect.options[4].textContent = "Tất cả (" + total + ")";
+    }
+
+    function copySuggestion(text, button) {
+      function done() {
+        var old = button.textContent;
+        button.textContent = "Đã sao chép";
+        button.disabled = true;
+        window.setTimeout(function () {
+          button.textContent = old;
+          button.disabled = false;
+        }, 1500);
+      }
+
+      function fallback() {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "readonly");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        try {
+          document.execCommand("copy");
+          done();
+        } catch (error) {
+          button.textContent = "Không sao chép được";
+        }
+        document.body.removeChild(area);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+    }
+
     function render(payload) {
       lastPayload = payload;
       var issues = sortIssues(payload.issues || []);
@@ -1095,25 +1248,36 @@
       var total = summaryData.total || 0;
       var bySeverity = summaryData.by_severity || {};
       var skipped = issues.filter(isDismissed).length;
+      var filtered = issues.filter(matchesFilter);
+      var remaining = filtered.filter(function (issue) {
+        return !isDismissed(issue);
+      });
+      updateFilterOptions(bySeverity, total);
+
       var detail = total === 0
         ? ""
-        : " (" + (bySeverity.error || 0) + " lỗi, " +
+        : " — " + (bySeverity.error || 0) + " lỗi, " +
           (bySeverity.warning || 0) + " cảnh báo, " +
-          (bySeverity.info || 0) + " info)";
+          (bySeverity.info || 0) + " gợi ý";
+      var remainingNote = remaining.length !== total ? " · còn " + remaining.length : "";
       setSummary(
         total === 0
           ? "Không phát hiện vấn đề rõ ràng."
-          : total + " vấn đề" + detail + (skipped ? " · đã bỏ qua " + skipped : ""),
+          : total + " vấn đề" + detail + remainingNote +
+            (skipped ? " · đã bỏ qua " + skipped : ""),
         total === 0 ? "ok" : ""
       );
 
-      var visible = issues.filter(function (issue) {
-        return (showInfo && showInfo.checked) || issue.severity !== "info";
-      });
-      var hiddenInfo = issues.length - visible.length;
-      var remaining = visible.filter(function (issue) {
-        return !isDismissed(issue);
-      });
+      if (metaNote) {
+        var time = new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        metaNote.hidden = false;
+        metaNote.textContent = payload.model
+          ? "AI: " + payload.model + " lúc " + time + " · đã gộp với quy tắc offline"
+          : "Quy tắc offline lúc " + time + " · không gửi bài lên mạng.";
+      }
 
       if (restoreButton) {
         restoreButton.hidden = skipped === 0;
@@ -1121,16 +1285,15 @@
       }
 
       list.innerHTML = "";
-      if (hiddenInfo > 0) {
-        var note = document.createElement("li");
-        note.className = "bloglint-hidden-note";
-        note.textContent = "Đang ẩn " + hiddenInfo + " gợi ý info. Bật “Hiện gợi ý mức info” để xem.";
-        list.appendChild(note);
-      }
-      if (remaining.length === 0 && skipped > 0) {
+      if (total > 0 && filtered.length === 0) {
+        var filterNote = document.createElement("li");
+        filterNote.className = "bloglint-empty-note";
+        filterNote.textContent = "Không có vấn đề ở mức đang chọn.";
+        list.appendChild(filterNote);
+      } else if (total > 0 && remaining.length === 0) {
         var emptyNote = document.createElement("li");
-        emptyNote.className = "bloglint-hidden-note";
-        emptyNote.textContent = "Tất cả vấn đề đang hiển thị đã được bỏ qua.";
+        emptyNote.className = "bloglint-empty-note";
+        emptyNote.textContent = "Tất cả vấn đề đang hiển thị đã được bỏ qua. Bấm “Khôi phục…” để xem lại.";
         list.appendChild(emptyNote);
       }
 
@@ -1141,13 +1304,19 @@
         var head = document.createElement("div");
         head.className = "bloglint-issue-head";
         var badge = document.createElement("span");
-        badge.className = "bloglint-badge";
-        badge.textContent = issue.severity;
+        badge.className = "bloglint-badge severity-" + issue.severity;
+        badge.textContent = SEVERITY_LABEL[issue.severity] || issue.severity;
         var category = document.createElement("span");
         category.className = "bloglint-category";
-        category.textContent = issue.category;
+        category.textContent = categoryLabel(issue.category);
+        category.title = issue.category || "";
+        var source = document.createElement("span");
+        source.className = "bloglint-source" + (issue.source === "teacher" ? " ai" : "");
+        source.textContent = issue.source === "teacher" ? "AI" : "Quy tắc";
+        source.title = issue.source === "teacher" ? "Do model Ollama đề xuất" : "Do quy tắc offline phát hiện";
         head.appendChild(badge);
         head.appendChild(category);
+        head.appendChild(source);
 
         var message = document.createElement("p");
         message.className = "bloglint-message";
@@ -1159,14 +1328,14 @@
         if (issue.suggestion) {
           var suggestion = document.createElement("p");
           suggestion.className = "bloglint-suggestion";
-          suggestion.textContent = issue.suggestion;
+          suggestion.textContent = "Gợi ý: " + issue.suggestion;
           item.appendChild(suggestion);
         }
 
         if (issue.reference) {
           var reference = document.createElement("p");
           reference.className = "bloglint-reference";
-          reference.textContent = "Nguồn: " + issue.reference;
+          reference.textContent = "Căn cứ: " + issue.reference;
           item.appendChild(reference);
         }
 
@@ -1193,10 +1362,22 @@
         });
         actions.appendChild(guide);
 
+        if (issue.suggestion) {
+          var copy = document.createElement("button");
+          copy.type = "button";
+          copy.className = "btn bloglint-copy";
+          copy.textContent = "Sao chép gợi ý";
+          copy.addEventListener("click", function () {
+            copySuggestion(issue.suggestion, copy);
+          });
+          actions.appendChild(copy);
+        }
+
         var skip = document.createElement("button");
         skip.type = "button";
         skip.className = "btn bloglint-dismiss";
         skip.textContent = "Bỏ qua";
+        skip.title = "Ẩn vấn đề này khỏi danh sách";
         skip.addEventListener("click", function () {
           dismissIssue(issue);
         });
@@ -1205,13 +1386,20 @@
         item.appendChild(actions);
         list.appendChild(item);
       });
+
+      updateStale();
     }
 
     function request(endpoint, label) {
       if (running || !content || !enabled) return;
       running = true;
+      analyzedContent = content.value;
+      analyzedTitle = titleInput ? titleInput.value : "";
+      lastEndpoint = endpoint;
+      lastLabel = label;
+      if (staleNote) staleNote.hidden = true;
       applyEnabled();
-      setSummary(label, "pending");
+      startStatus(label);
 
       var params = new URLSearchParams();
       params.set("content", content.value);
@@ -1229,6 +1417,7 @@
           setSummary(error.message || "Phân tích thất bại.", "error");
         })
         .finally(function () {
+          stopStatus();
           running = false;
           applyEnabled();
         });
@@ -1244,9 +1433,23 @@
         request("/bloglint/review", "Đang gọi Ollama...");
       });
     }
-    if (showInfo) {
-      showInfo.addEventListener("change", function () {
+    if (filterSelect) {
+      filterSelect.value = filter;
+      filterSelect.addEventListener("change", function () {
+        filter = filterSelect.value;
+        saveFilter();
         if (lastPayload) render(lastPayload);
+      });
+    }
+    if (content) {
+      content.addEventListener("input", updateStale);
+    }
+    if (titleInput) {
+      titleInput.addEventListener("input", updateStale);
+    }
+    if (staleRerun) {
+      staleRerun.addEventListener("click", function () {
+        request(lastEndpoint, lastLabel);
       });
     }
     if (restoreButton) {

@@ -812,10 +812,48 @@ input[type="checkbox"] {
   color: var(--muted, #6b625a);
 }
 
-.bloglint-hidden-note {
+.bloglint-hidden-note,
+.bloglint-empty-note {
   font-size: 0.82rem;
   color: var(--muted, #6b625a);
   font-style: italic;
+}
+
+.bloglint-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bloglint-filter select {
+  width: auto;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.bloglint-meta {
+  font-size: 0.78rem;
+  color: var(--muted, #6b625a);
+}
+
+.bloglint-stale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: #fdf1dc;
+  color: #8a5a12;
+  font-size: 0.82rem;
+}
+
+.bloglint-stale[hidden] { display: none; }
+
+.bloglint-stale-rerun {
+  padding: 0.15rem 0.45rem;
+  font-size: 0.76rem;
 }
 
 .bloglint-summary {
@@ -863,6 +901,7 @@ input[type="checkbox"] {
 .bloglint-issue-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.45rem;
   margin-bottom: 0.2rem;
 }
@@ -874,10 +913,31 @@ input[type="checkbox"] {
   color: var(--muted, #6b625a);
 }
 
+.bloglint-badge.severity-error { color: #b93a2f; font-weight: 700; }
+.bloglint-badge.severity-warning { color: #a86a12; font-weight: 700; }
+.bloglint-badge.severity-info { color: #5f7288; font-weight: 600; }
+
 .bloglint-category {
   font-size: 0.78rem;
   font-weight: 600;
   color: #8a5a44;
+}
+
+.bloglint-source {
+  margin-left: auto;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid #d8e0e8;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6d7f92;
+}
+
+.bloglint-source.ai {
+  border-color: #ddd0ec;
+  background: #f6f0fb;
+  color: #6b4a8a;
 }
 
 .bloglint-message { margin: 0; font-size: 0.9rem; }
@@ -992,3 +1052,6 @@ input[type="checkbox"] {
   #content { min-height: 420px; }
   .preview-frame { height: 380px; }
 }
+
+/* Thuộc tính hidden phải thắng mọi display của component. */
+[hidden] { display: none !important; }
