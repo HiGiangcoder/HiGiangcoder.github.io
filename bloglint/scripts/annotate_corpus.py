@@ -48,6 +48,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--retries", type=int, default=2, help="Số lần thử lại khi teacher lỗi")
     parser.add_argument("--sleep", type=float, default=1.0, help="Delay giữa các bài")
+    parser.add_argument("--model", default=None, help="Model Ollama (mặc định từ settings)")
     args = parser.parse_args()
 
     settings = Settings.from_env(None)
@@ -69,7 +70,7 @@ def main() -> int:
         return 2
 
     teacher = OllamaTeacher(
-        model=settings.ollama_model,
+        model=args.model or settings.ollama_model,
         base_url=settings.ollama_base_url,
         api_key=settings.ollama_api_key,
         timeout=settings.request_timeout,

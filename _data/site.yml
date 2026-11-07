@@ -8,3 +8,6 @@ page:
   post_grid_columns: 3
   post_card_min_height: 260
   post_content_width: 760
+bloglint:
+  ollama_base_url: http://localhost:11434
+  ollama_model: nemotron-3-ultra:cloud

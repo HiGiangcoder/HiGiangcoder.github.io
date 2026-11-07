@@ -34,6 +34,17 @@ class PromptTests(unittest.TestCase):
         self.assertIn('"issues"', prompt)
         self.assertIn("quote", prompt)
 
+    def test_prompt_includes_guide_context_when_provided(self) -> None:
+        document = document_from_body(BODY, title="Thử")
+        prompt = build_prompt(document, guide_context="TÀI LIỆU: viết câu ngắn.")
+        self.assertIn("TÀI LIỆU THAM KHẢO (RAG)", prompt)
+        self.assertIn("TÀI LIỆU: viết câu ngắn.", prompt)
+
+    def test_prompt_omits_guide_section_when_empty(self) -> None:
+        document = document_from_body(BODY)
+        prompt = build_prompt(document, guide_context="   ")
+        self.assertNotIn("TÀI LIỆU THAM KHẢO (RAG)", prompt)
+
 
 class GuardTests(unittest.TestCase):
     def test_network_is_denied_by_default(self) -> None:

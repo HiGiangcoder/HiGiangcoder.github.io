@@ -6,7 +6,7 @@ Tài liệu này dành cho người và AI agent làm việc trong `bloglint/`.
 
 BlogLint là trợ lý chẩn đoán bài viết tiếng Việt cho blog Jekyll trong repo này.
 
-- **Teacher**: `gpt-oss:120b-cloud` qua Ollama.
+- **Teacher**: `nemotron-3-ultra:cloud` qua Ollama (mặc định; có thể đổi trong Admin → Cài đặt).
 - **Student** (tương lai): `Qwen3-VL-2B` + LoRA SFT.
 - **M0/M1 hiện tại**: nền tảng, schema, rule-based diagnostics, teacher client có thể mock,
   dataset JSONL append-only, benchmark scaffold, CLI và tích hợp admin.

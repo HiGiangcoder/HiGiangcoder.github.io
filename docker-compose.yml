@@ -16,8 +16,10 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
-    ports:
-      - "127.0.0.1:8000:8000"
+    # Dùng host network để admin gọi được Ollama trên host tại
+    # http://localhost:11434 (Ollama mặc định chỉ lắng nghe loopback).
+    network_mode: host
+    command: ["uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"]
     environment:
       REPO_DIR: /site
       PREVIEW_URL: http://localhost:4000

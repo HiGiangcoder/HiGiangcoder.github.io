@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_MODEL = "gpt-oss:120b-cloud"
+DEFAULT_MODEL = "nemotron-3-ultra:cloud"
 DEFAULT_BASE_URL = "http://localhost:11434"
 CLOUD_BASE_URL = "https://ollama.com"
 
@@ -42,9 +42,27 @@ class Settings:
         api_key = os.environ.get("BLOGLINT_OLLAMA_API_KEY") or os.environ.get(
             "OLLAMA_API_KEY"
         )
+        site_bloglint: dict = {}
+        site_file = root / "_data" / "site.yml"
+        if site_file.exists():
+            try:
+                import yaml
+
+                loaded = yaml.safe_load(site_file.read_text(encoding="utf-8")) or {}
+                if isinstance(loaded, dict) and isinstance(loaded.get("bloglint"), dict):
+                    site_bloglint = loaded["bloglint"]
+            except Exception:  # pragma: no cover
+                site_bloglint = {}
+
         base_url = os.environ.get("BLOGLINT_OLLAMA_BASE_URL")
         if not base_url:
+            base_url = site_bloglint.get("ollama_base_url")
+        if not base_url:
             base_url = CLOUD_BASE_URL if api_key else DEFAULT_BASE_URL
+
+        model = os.environ.get("BLOGLINT_OLLAMA_MODEL")
+        if not model:
+            model = site_bloglint.get("ollama_model", DEFAULT_MODEL)
 
         data_dir = os.environ.get("BLOGLINT_DATA_DIR")
         data_path = Path(data_dir).expanduser() if data_dir else root / "bloglint" / "data"
@@ -54,7 +72,7 @@ class Settings:
             posts_dir=root / "_posts",
             data_dir=data_path,
             ollama_base_url=base_url.rstrip("/"),
-            ollama_model=os.environ.get("BLOGLINT_OLLAMA_MODEL", DEFAULT_MODEL),
+            ollama_model=model,
             ollama_api_key=api_key,
             request_timeout=float(os.environ.get("BLOGLINT_TIMEOUT", "120")),
             allow_network=_env_bool("BLOGLINT_ALLOW_NETWORK"),

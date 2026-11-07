@@ -63,6 +63,21 @@
     </label>
   </section>
 
+  <section class="settings-section">
+    <h2>BlogLint / Ollama</h2>
+    <p class="muted small">Cài đặt API cho BlogLint. API key chỉ đọc từ biến môi trường (BLOGLINT_OLLAMA_API_KEY / OLLAMA_API_KEY), không lưu trong site.yml.</p>
+
+    <label>
+      <span>Ollama base URL</span>
+      <input type="text" name="ollama_base_url" value="{{ site_data.bloglint.ollama_base_url or 'http://localhost:11434' }}" required>
+    </label>
+
+    <label>
+      <span>Ollama model</span>
+      <input type="text" name="ollama_model" value="{{ site_data.bloglint.ollama_model or 'nemotron-3-ultra:cloud' }}" required>
+    </label>
+  </section>
+
   <div class="form-actions">
     <button class="btn primary" type="submit">Lưu cài đặt</button>
   </div>

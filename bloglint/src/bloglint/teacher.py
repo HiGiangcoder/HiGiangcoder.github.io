@@ -32,7 +32,8 @@ Trả về DUY NHẤT một JSON object theo cấu trúc:
       "severity": "info | warning | error",
       "message": "mô tả ngắn gọn bằng tiếng Việt",
       "suggestion": "gợi ý sửa cụ thể",
-      "quote": "trích nguyên văn một đoạn ngắn trong bài"
+      "quote": "trích nguyên văn một đoạn ngắn trong bài",
+      "reference": "tên tài liệu/quy tắc ngắn làm căn cứ, hoặc null nếu không rõ"
     }
   ]
 }
@@ -40,6 +41,7 @@ Trả về DUY NHẤT một JSON object theo cấu trúc:
 Quy tắc:
 - Mỗi issue phải có ``quote`` xuất hiện nguyên văn trong bài.
 - Không bịa lỗi. Nếu bài không có vấn đề đáng kể, trả ``{"issues": []}``.
+- ``reference`` chỉ điền khi có căn cứ từ tài liệu/quy tắc viết; không bịa tên tài liệu. Nếu không rõ, đặt ``null``.
 - Tối đa 20 issue, ưu tiên vấn đề rõ ràng nhất.
 - Không thêm chữ nào ngoài JSON."""
 
@@ -65,15 +67,31 @@ class TeacherResult:
     meta: dict = field(default_factory=dict)
 
 
-def build_prompt(document: Document) -> str:
-    return (
-        f"{DEFAULT_FORMAT_INSTRUCTION}\n\n"
-        f"Tiêu đề: {document.title or '(không có)'}\n"
-        f"Độ dài: {document.word_count} từ\n"
-        "----- BẮT ĐẦU BÀI -----\n"
-        f"{document.body}\n"
-        "----- KẾT THÚC BÀI -----"
+def build_prompt(document: Document, guide_context: str = "") -> str:
+    parts = [
+        DEFAULT_FORMAT_INSTRUCTION,
+        "",
+        f"Tiêu đề: {document.title or '(không có)'}",
+        f"Độ dài: {document.word_count} từ",
+    ]
+    if guide_context.strip():
+        parts.extend(
+            [
+                "",
+                "----- TÀI LIỆU THAM KHẢO (RAG) -----",
+                guide_context.strip(),
+                "----- HẾT TÀI LIỆU THAM KHẢO -----",
+                "Chỉ dùng tài liệu trên khi thật sự liên quan; không bịa thêm nguồn.",
+            ]
+        )
+    parts.extend(
+        [
+            "----- BẮT ĐẦU BÀI -----",
+            document.body,
+            "----- KẾT THÚC BÀI -----",
+        ]
     )
+    return "\n".join(parts)
 
 
 def extract_json(text: str) -> dict:
@@ -219,6 +237,14 @@ def issues_from_payload(payload: dict, body: str) -> list[Issue]:
                     f"issues[{index}] có quote không xuất hiện trong bài: {quote[:60]!r}"
                 )
 
+        reference = item.get("reference")
+        if reference is not None:
+            if not isinstance(reference, str):
+                raise TeacherResponseError(
+                    f"issues[{index}] reference phải là chuỗi hoặc null."
+                )
+            reference = reference.strip() or None
+
         try:
             issues.append(
                 Issue(
@@ -229,6 +255,7 @@ def issues_from_payload(payload: dict, body: str) -> list[Issue]:
                     span=span,
                     source="teacher",
                     confidence=item.get("confidence"),
+                    reference=reference,
                 )
             )
         except SchemaError as exc:
@@ -287,7 +314,10 @@ class OllamaTeacher:
         return {}
 
     def annotate(
-        self, document: Document, allow_network: bool | None = None
+        self,
+        document: Document,
+        allow_network: bool | None = None,
+        guide_context: str = "",
     ) -> TeacherResult:
         permitted = self.allow_network if allow_network is None else allow_network
         if not permitted:
@@ -295,7 +325,7 @@ class OllamaTeacher:
                 "Gọi teacher cần --allow-network (hoặc allow_network=True)."
             )
 
-        prompt = build_prompt(document)
+        prompt = build_prompt(document, guide_context=guide_context)
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],

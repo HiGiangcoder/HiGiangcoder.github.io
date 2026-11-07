@@ -2,7 +2,7 @@
 
 Trợ lý chẩn đoán bài viết tiếng Việt cho blog Jekyll trong repo này.
 
-- **Teacher (M1)**: `gpt-oss:120b-cloud` qua Ollama, chỉ gọi khi có `--allow-network`.
+- **Teacher (M1)**: `nemotron-3-ultra:cloud` qua Ollama (mặc định), chỉ gọi khi có `--allow-network`.
 - **Student (tương lai)**: `Qwen3-VL-2B` + LoRA SFT — **chưa triển khai** trong M0/M1.
 - **Hiện tại**: rule-based diagnostics offline, teacher client có thể mock, dataset JSONL
   append-only, benchmark scaffold và tích hợp admin.

@@ -100,6 +100,19 @@ MISSING_SPACE_AFTER_PUNCT_RE = re.compile(r"[.,;:!?](?=[^\s\d.,;:!?])")
 REPEATED_PUNCT_RE = re.compile(r"([!?])\1{2,}")
 
 
+# Tham chiếu ngắn gọn tới các nguyên tắc viết phổ biến; không phải trích dẫn học thuật.
+RULE_REFERENCES = {
+    "sentence_too_long": "Plain Language: giữ câu ngắn, rõ ý",
+    "paragraph_too_long": "Web writing: chia đoạn theo ý chính",
+    "filler_word": "Style guide: tránh từ đệm làm yếu câu",
+    "cliche": "Style guide: tránh sáo ngữ chung chung",
+    "repetition": "Style guide: tránh lặp từ không cần thiết",
+    "punctuation": "Quy tắc chính tả tiếng Việt: khoảng trắng và dấu câu",
+    "passive_overuse": "Style guide: ưu tiên câu chủ động",
+    "structure": "Web content: dùng heading cho bài dài",
+}
+
+
 @dataclass(frozen=True)
 class DiagnosticsConfig:
     max_sentence_words: int = 40
@@ -154,6 +167,7 @@ def _check_sentences(
                 suggestion="Tách câu tại các ý phụ hoặc thay dấu phẩy bằng dấu chấm.",
                 span=_span(body, sentence.start, sentence.end),
                 paragraph=paragraph.index,
+                reference=RULE_REFERENCES["sentence_too_long"],
             )
         )
     return issues
@@ -176,6 +190,7 @@ def _check_paragraph(
                 suggestion="Tách đoạn theo từng ý chính, mỗi đoạn 3–6 câu.",
                 span=_span(body, paragraph.start, paragraph.end),
                 paragraph=paragraph.index,
+                reference=RULE_REFERENCES["paragraph_too_long"],
             )
         )
 
@@ -195,6 +210,7 @@ def _check_paragraph(
                     suggestion="Xem lại các câu bị động và chọn cách diễn đạt chủ động.",
                     span=_span(body, paragraph.start, paragraph.end),
                     paragraph=paragraph.index,
+                    reference=RULE_REFERENCES["passive_overuse"],
                 )
             )
 
@@ -224,6 +240,7 @@ def _check_paragraph(
                     paragraph.start + first.end(),
                 ),
                 paragraph=paragraph.index,
+                reference=RULE_REFERENCES["repetition"],
             )
         )
 
@@ -240,6 +257,7 @@ def _check_paragraph(
                     paragraph.start + match.end(),
                 ),
                 paragraph=paragraph.index,
+                reference=RULE_REFERENCES["repetition"],
             )
         )
     return issues
@@ -255,6 +273,7 @@ def _check_punctuation(body: str, masked: str) -> list[Issue]:
                 message="Có khoảng trắng trước dấu câu.",
                 suggestion="Bỏ khoảng trắng trước dấu câu.",
                 span=_span(body, match.start(), match.end()),
+                reference=RULE_REFERENCES["punctuation"],
             )
         )
     for match in MISSING_SPACE_AFTER_PUNCT_RE.finditer(masked):
@@ -265,6 +284,7 @@ def _check_punctuation(body: str, masked: str) -> list[Issue]:
                 message="Thiếu khoảng trắng sau dấu câu.",
                 suggestion="Thêm một khoảng trắng sau dấu câu.",
                 span=_span(body, match.start(), match.end()),
+                reference=RULE_REFERENCES["punctuation"],
             )
         )
     for match in REPEATED_PUNCT_RE.finditer(masked):
@@ -275,6 +295,7 @@ def _check_punctuation(body: str, masked: str) -> list[Issue]:
                 message="Dấu câu được lặp quá nhiều lần.",
                 suggestion="Giữ tối đa một dấu chấm than hoặc dấu hỏi.",
                 span=_span(body, match.start(), match.end()),
+                reference=RULE_REFERENCES["punctuation"],
             )
         )
     return issues
@@ -294,6 +315,7 @@ def _check_structure(body: str, total_words: int, config: DiagnosticsConfig) -> 
                 "Nên thêm heading để người đọc dễ theo dõi."
             ),
             suggestion="Thêm các mục ## cho từng phần chính của bài.",
+            reference=RULE_REFERENCES["structure"],
         )
     ]
 
@@ -335,6 +357,7 @@ def analyze_document(
                 message=message,
                 suggestion=suggestion,
                 span=_span(body, start, end),
+                reference=RULE_REFERENCES[category],
             )
         )
 

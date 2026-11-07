@@ -189,11 +189,14 @@
     <section class="panel stack bloglint-panel" data-bloglint-panel>
       <div class="panel-head-row">
         <h2>BlogLint</h2>
-        <button type="button" class="btn" id="bloglint-run">Phân tích</button>
+        <div class="form-actions">
+          <button type="button" class="btn" id="bloglint-run">Phân tích offline</button>
+          <button type="button" class="btn primary" id="bloglint-ai-run">AI review (Ollama)</button>
+        </div>
       </div>
       <p class="muted small">
-        Chẩn đoán offline trên nội dung đang soạn: câu/đoạn quá dài, từ đệm, sáo ngữ,
-        lặp từ, lỗi dấu câu. Không gửi bài lên mạng.
+        Phân tích offline: câu/đoạn quá dài, từ đệm, sáo ngữ, lặp từ, lỗi dấu câu.
+        AI review gọi Ollama theo cài đặt trong <a href="/settings">Cài đặt</a>.
       </p>
       <label class="bloglint-toggle">
         <input type="checkbox" id="bloglint-show-info">
@@ -846,6 +849,7 @@
     var summary = document.getElementById("bloglint-summary");
     var list = document.getElementById("bloglint-issues");
     var runButton = document.getElementById("bloglint-run");
+    var aiButton = document.getElementById("bloglint-ai-run");
     var showInfo = document.getElementById("bloglint-show-info");
     var running = false;
     var lastPayload = null;
@@ -936,17 +940,18 @@
       });
     }
 
-    function run() {
+    function request(endpoint, label) {
       if (running || !content) return;
       running = true;
       if (runButton) runButton.disabled = true;
-      setSummary("Đang phân tích...", "pending");
+      if (aiButton) aiButton.disabled = true;
+      setSummary(label, "pending");
 
       var params = new URLSearchParams();
       params.set("content", content.value);
       params.set("title", titleInput ? titleInput.value : "");
 
-      fetch("/bloglint/analyze", { method: "POST", body: params })
+      fetch(endpoint, { method: "POST", body: params })
         .then(function (response) {
           return response.json().then(function (body) {
             if (!response.ok) throw new Error(body.detail || "Phân tích thất bại.");
@@ -960,16 +965,28 @@
         .finally(function () {
           running = false;
           if (runButton) runButton.disabled = false;
+          if (aiButton) aiButton.disabled = false;
         });
     }
 
-    if (runButton) runButton.addEventListener("click", run);
+    if (runButton) {
+      runButton.addEventListener("click", function () {
+        request("/bloglint/analyze", "Đang phân tích...");
+      });
+    }
+    if (aiButton) {
+      aiButton.addEventListener("click", function () {
+        request("/bloglint/review", "Đang gọi Ollama...");
+      });
+    }
     if (showInfo) {
       showInfo.addEventListener("change", function () {
         if (lastPayload) render(lastPayload);
       });
     }
-    if (content && content.value.trim()) run();
+    if (content && content.value.trim()) {
+      request("/bloglint/analyze", "Đang phân tích...");
+    }
   })();
 </script>
 {% endblock %}

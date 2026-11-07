@@ -107,6 +107,7 @@ class Issue:
     source: str = "rule"
     paragraph: int | None = None
     confidence: float | None = None
+    reference: str | None = None
 
     def __post_init__(self) -> None:
         if self.category not in CATEGORIES:
@@ -126,6 +127,8 @@ class Issue:
                 raise SchemaError("confidence phải là số")
             if not 0.0 <= float(self.confidence) <= 1.0:
                 raise SchemaError("confidence phải trong khoảng 0..1")
+        if self.reference is not None:
+            _require_str(self.reference, "reference", allow_empty=True)
 
     def to_dict(self) -> dict:
         return {
@@ -137,6 +140,7 @@ class Issue:
             "source": self.source,
             "paragraph": self.paragraph,
             "confidence": self.confidence,
+            "reference": self.reference,
         }
 
     @classmethod
@@ -156,6 +160,7 @@ class Issue:
             source=data.get("source", "rule"),
             paragraph=data.get("paragraph"),
             confidence=data.get("confidence"),
+            reference=data.get("reference"),
         )
 
 

@@ -43,8 +43,8 @@ SITE_URL = os.environ.get("SITE_URL", "https://higiangcoder.github.io")
 # Lịch sử publish (mới nhất ở đầu), mỗi mục: id/title/ok/time/outputs
 PUBLISH_RESULTS: list[dict] = []
 
-# BlogLint là package offline trong repo. Admin chỉ dùng rule-based diagnostics,
-# không gọi teacher/cloud từ giao diện quản trị.
+# BlogLint là package trong repo. Admin dùng rule-based mặc định; AI review
+# gọi Ollama theo cài đặt ở /settings (base URL + model).
 BLOGLINT_SRC = REPO_DIR / "bloglint" / "src"
 if BLOGLINT_SRC.exists() and str(BLOGLINT_SRC) not in sys.path:
     sys.path.insert(0, str(BLOGLINT_SRC))
@@ -52,9 +52,74 @@ if BLOGLINT_SRC.exists() and str(BLOGLINT_SRC) not in sys.path:
 try:  # pragma: no cover - phụ thuộc môi trường mount của Docker
     from bloglint.diagnostics import analyze_body as bloglint_analyze_body
     from bloglint.diagnostics import summarize as bloglint_summarize
+    from bloglint.config import Settings as BlogLintSettings
+    from bloglint.teacher import OllamaTeacher, TeacherError
+    from bloglint.text import document_from_body as bloglint_document_from_body
 except Exception:  # pragma: no cover
     bloglint_analyze_body = None
     bloglint_summarize = None
+    BlogLintSettings = None
+    OllamaTeacher = None
+    TeacherError = None
+    bloglint_document_from_body = None
+
+BLOGLINT_GUIDES_DIR = REPO_DIR / "bloglint" / "guides"
+BLOGLINT_GUIDE_MAX_CHARS = 6000
+
+# Rule category -> file guide tương ứng trong bloglint/guides/.
+BLOGLINT_GUIDE_BY_CATEGORY = {
+    "sentence_too_long": "clarity",
+    "long_sentence": "clarity",
+    "clarity": "clarity",
+    "coherence": "coherence",
+    "paragraph_too_long": "structure",
+    "missing_heading": "structure",
+    "heading_skip": "structure",
+    "structure": "structure",
+    "filler_word": "style",
+    "cliche": "style",
+    "repetition": "style",
+    "passive_overuse": "style",
+    "style": "style",
+    "punctuation": "punctuation",
+    "spacing": "spacing",
+    "grammar": "grammar",
+    "spelling": "spelling",
+    "reference": "references",
+    "factual": "references",
+}
+
+
+def bloglint_guide_category(category: str) -> str:
+    return BLOGLINT_GUIDE_BY_CATEGORY.get(category, "style")
+
+
+def load_bloglint_guide_context(categories: list[str]) -> str:
+    """Đọc guide RAG tương ứng các category chẩn đoán được (có giới hạn độ dài)."""
+    if not BLOGLINT_GUIDES_DIR.is_dir():
+        return ""
+    ordered = [c for c in dict.fromkeys(categories) if c]
+    if not ordered:
+        ordered = ["clarity", "coherence", "style", "grammar"]
+    ordered = [bloglint_guide_category(c) for c in ordered]
+    ordered = list(dict.fromkeys(ordered))
+    chunks: list[str] = []
+    total = 0
+    for category in ordered:
+        path = BLOGLINT_GUIDES_DIR / f"{category}.md"
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace").strip()
+        if not text:
+            continue
+        if total + len(text) > BLOGLINT_GUIDE_MAX_CHARS:
+            text = text[: max(0, BLOGLINT_GUIDE_MAX_CHARS - total)]
+        chunks.append(text)
+        total += len(text)
+        if total >= BLOGLINT_GUIDE_MAX_CHARS:
+            break
+    return "\n\n".join(chunks)
+
 
 EDITABLE_PAGES = {
     "gioi-thieu.md": "Trang giới thiệu",
@@ -149,6 +214,10 @@ def default_site_data() -> dict:
             "post_card_min_height": 220,
             "post_content_width": 760,
         },
+        "bloglint": {
+            "ollama_base_url": "http://localhost:11434",
+            "ollama_model": "nemotron-3-ultra:cloud",
+        },
     }
 
 
@@ -162,10 +231,14 @@ def normalize_site_data(data: dict) -> dict:
     raw_page = data.get("page", {}) if isinstance(data.get("page"), dict) else {}
     page = base["page"].copy()
     page.update(raw_page)
+    raw_bloglint = data.get("bloglint", {}) if isinstance(data.get("bloglint"), dict) else {}
+    bloglint = base["bloglint"].copy()
+    bloglint.update(raw_bloglint)
     if "home_posts" in data and "home_posts" not in raw_page:
         page["home_posts"] = data["home_posts"]
     base["admin"] = admin
     base["page"] = page
+    base["bloglint"] = bloglint
 
     if base.get("preview_ratio") not in PREVIEW_RATIO_OPTIONS:
         base["preview_ratio"] = "1:2"
@@ -617,6 +690,62 @@ def bloglint_analyze(content: str = Form(""), title: str = Form("")):
     return {
         "issues": [issue.to_dict() for issue in issues],
         "summary": bloglint_summarize(issues),
+    }
+
+
+@app.post("/bloglint/review")
+def bloglint_review(content: str = Form(""), title: str = Form("")):
+    """Review bằng Ollama (local proxy hoặc cloud) theo cài đặt admin."""
+    if (
+        BlogLintSettings is None
+        or OllamaTeacher is None
+        or bloglint_document_from_body is None
+        or bloglint_summarize is None
+    ):
+        raise HTTPException(503, "BlogLint/Ollama chưa được cài trong admin.")
+    settings = BlogLintSettings.from_env(REPO_DIR)
+    teacher = OllamaTeacher(
+        model=settings.ollama_model,
+        base_url=settings.ollama_base_url,
+        api_key=settings.ollama_api_key,
+        timeout=settings.request_timeout,
+        allow_network=True,
+    )
+    document = bloglint_document_from_body(content, title=title)
+    offline_issues = bloglint_analyze_body(content, title=title)
+    guide_context = load_bloglint_guide_context(
+        [issue.category for issue in offline_issues]
+    )
+    try:
+        result = teacher.annotate(
+            document, allow_network=True, guide_context=guide_context
+        )
+    except TeacherError as exc:
+        raise HTTPException(502, f"Ollama lỗi: {exc}") from exc
+
+    # Gộp issue rule-based với issue của teacher; bỏ trùng theo category + span.
+    issues = list(result.issues)
+
+    def overlaps(left, right) -> bool:
+        if not left.span or not right.span:
+            return False
+        return left.span.start < right.span.end and right.span.start < left.span.end
+
+    for issue in offline_issues:
+        if any(
+            bloglint_guide_category(issue.category)
+            == bloglint_guide_category(other.category)
+            and overlaps(issue, other)
+            for other in issues
+        ):
+            continue
+        issues.append(issue)
+
+    return {
+        "issues": [issue.to_dict() for issue in issues],
+        "summary": bloglint_summarize(issues),
+        "model": result.model,
+        "guide_categories": sorted({issue.category for issue in offline_issues}),
     }
 
 
@@ -1173,6 +1302,8 @@ def update_settings(
     page_post_grid_columns: int = Form(3),
     page_post_card_min_height: int = Form(220),
     page_post_content_width: int = Form(760),
+    ollama_base_url: str = Form("http://localhost:11434"),
+    ollama_model: str = Form("nemotron-3-ultra:cloud"),
 ):
     if home_posts < 1 or home_posts > 50:
         raise HTTPException(400, "Số bài viết phải từ 1 đến 50.")
@@ -1188,6 +1319,9 @@ def update_settings(
     data["page"]["post_grid_columns"] = page_post_grid_columns
     data["page"]["post_card_min_height"] = page_post_card_min_height
     data["page"]["post_content_width"] = page_post_content_width
+    data.setdefault("bloglint", {})
+    data["bloglint"]["ollama_base_url"] = ollama_base_url.strip()
+    data["bloglint"]["ollama_model"] = ollama_model.strip()
     data = normalize_site_data(data)
     save_site_data(data)
     return RedirectResponse("/settings", status_code=303)
