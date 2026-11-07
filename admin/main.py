@@ -693,6 +693,22 @@ def bloglint_analyze(content: str = Form(""), title: str = Form("")):
     }
 
 
+@app.get("/bloglint/guide")
+def bloglint_guide(category: str = ""):
+    """Trả nội dung guide RAG tương ứng category của issue."""
+    guide = bloglint_guide_category(category.strip())
+    path = BLOGLINT_GUIDES_DIR / f"{guide}.md"
+    if not path.is_file():
+        raise HTTPException(404, f"Chưa có hướng dẫn cho nhóm '{category}'.")
+    text = path.read_text(encoding="utf-8", errors="replace")
+    title = category.strip() or guide
+    for line in text.splitlines():
+        if line.startswith("#"):
+            title = line.lstrip("#").strip() or title
+            break
+    return {"category": category, "guide": guide, "title": title, "content": text}
+
+
 @app.post("/bloglint/review")
 def bloglint_review(content: str = Form(""), title: str = Form("")):
     """Review bằng Ollama (local proxy hoặc cloud) theo cài đặt admin."""
